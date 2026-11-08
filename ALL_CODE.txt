@@ -1,0 +1,4096 @@
+################################################################################
+#  ASTRALIS - COMPLETE SOURCE IN ONE FILE
+#  Every file is introduced by a line:   ===== FILE: <path> =====
+#  To edit: search for that header, change the code under it.
+#  To rebuild the project folder from this file:  python3 split_allcode.py ALL_CODE.txt
+################################################################################
+
+
+===== FILE: pom.xml =====
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.astralis</groupId>
+  <artifactId>Astralis</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Bump this to match your server's Paper version if needed -->
+    <paper.version>1.21.4-R0.1-SNAPSHOT</paper.version>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>papermc</id>
+      <url>https://repo.papermc.io/repository/maven-public/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.papermc.paper</groupId>
+      <artifactId>paper-api</artifactId>
+      <version>${paper.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>Astralis-${project.version}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+
+
+===== FILE: src/main/resources/plugin.yml =====
+name: Astralis
+version: 1.0.0
+main: com.astralis.Astralis
+api-version: '1.21'
+description: Constellation sigils, Stardust energy, a counter-ring for balance and cinematic abilities.
+authors: [Astralis]
+commands:
+  astralis:
+    description: Astralis main command
+    aliases: [sigil, as]
+    usage: /<command> help
+permissions:
+  astralis.admin:
+    description: Admin commands
+    default: op
+  astralis.use:
+    description: Use sigils
+    default: true
+
+
+===== FILE: src/main/resources/config.yml =====
+# ============================================================
+#  ASTRALIS - Constellation Sigils
+#  Everything here is live-tunable with /astralis reload
+# ============================================================
+general:
+  max-sigils-carried: 2        # you can steal one extra, but only ONE passive is active
+  starter-sigil: true          # first join -> cinematic Awakening (least-played constellation is favoured)
+  drop-on-pvp-death: true      # sigils drop when you are killed by a player
+  keep-on-natural-death: true  # sigils are kept on non-PvP deaths (void, lava, mobs...)
+  allow-storage: false         # block chests / ender chests / hoppers
+  unattuned-potency: 0.75      # power multiplier when using a sigil you do not own
+  ultimate-cooldown: 30        # seconds, on top of the Stardust cost
+  ability-damage-scale: 1.6    # armour reduces ability damage like any hit; raise to make abilities hit harder
+  ultimate-on-swap: true       # F key (swap hands) also casts the Zenith
+  ambient-particles: true
+  broadcast-seizure: true
+  core-recipe: true            # enable the Stellar Core crafting recipe
+  disabled-worlds: []
+
+stardust:
+  max: 100
+  per-damage-dealt: 0.8
+  per-damage-taken: 0.5
+  per-hit-cap: 8
+  mob-multiplier: 0.25         # fighting mobs fills Stardust at 25% speed
+  kill-bonus: 25
+  death-retention: 0.5         # keep 50% of Stardust on death
+
+tiers:
+  dim:
+    potency: 1.0
+    cooldown-multiplier: 1.0
+    ultimate-cost: 100
+  radiant:
+    potency: 1.2
+    cooldown-multiplier: 0.85
+    ultimate-cost: 90
+
+# Aries > Orion > Draco > Cassiopeia > Gemini > Aries
+counter-ring:
+  bonus: 0.10
+  penalty: 0.10
+
+constellations:
+  aries:
+    enabled: true
+    momentum-bonus: 0.18
+    charge:
+      cooldown: 12
+      damage: 8
+      ticks: 9
+      shield-disable-seconds: 3
+    quake:
+      damage: 12
+      length: 18
+  orion:
+    enabled: true
+    arrow-bonus: 0.15
+    beam:
+      cooldown: 14
+      damage: 6
+      range: 40
+      mark-seconds: 6
+      mark-bonus: 0.10
+    volley:
+      damage: 2.5
+      radius: 6.5
+      seconds: 4
+  draco:
+    enabled: true
+    breath:
+      cooldown: 14
+      damage: 2.0
+      range: 9
+      fire-seconds: 3
+    wyrmfall:
+      damage: 12
+      radius: 7
+  cassiopeia:
+    enabled: true
+    poise-threshold: 0.5
+    aegis:
+      cooldown: 30
+      seconds: 8
+      absorption-amplifier: 0
+      reflect: 0.15
+    gravity:
+      radius: 7
+      seconds: 5
+      collapse-damage: 3
+  gemini:
+    enabled: true
+    dodge-chance: 0.17
+    step:
+      cooldown: 12
+      range: 14
+      damage: 5
+      radius: 3.5
+    echo:
+      seconds: 12
+      ratio: 1.0
+  # ---------------- MYTHICALS (outside the counter ring; only from events or admins) ----------------
+  phoenix:
+    enabled: true
+    revive:
+      cooldown: 300          # seconds between death-cheats
+      health: 0.15            # fraction of max health you rise with
+      burst-damage: 4
+    wings:
+      cooldown: 18
+      damage: 3
+    nova:
+      damage: 5
+      radius: 8
+      heal: 0.15
+  andromeda:
+    enabled: true
+    chains:
+      cooldown: 12
+      damage: 9
+      range: 25
+      root-seconds: 2
+    prison:
+      damage: 4
+      radius: 6
+      seconds: 7
+
+events:
+  world: ""                  # blank = first loaded world
+  auto:
+    enabled: false           # let the plugin start random events by itself
+    interval-minutes: 90
+    min-players: 2
+  starfall:
+    minutes: 8
+    interval-seconds: 5
+    stars-per-wave: 3
+    shard-stardust: 20
+  convergence:
+    minutes: 20
+    capture-seconds: 90
+    zone-radius: 6
+    min-distance: 150
+    max-distance: 600
+  eclipse:
+    minutes: 10
+    multiplier: 2.0
+    set-night: false
+
+
+===== FILE: src/main/java/com/astralis/Astralis.java =====
+package com.astralis;
+
+import com.astralis.command.AstralisCommand;
+import com.astralis.core.*;
+import com.astralis.event.EventManager;
+import com.astralis.listener.AbilityListener;
+import com.astralis.listener.CombatListener;
+import com.astralis.listener.SigilListener;
+import com.astralis.task.StarTask;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+/**
+ * Astralis - constellation sigils with Stardust energy, a rock-paper-scissors counter ring,
+ * and cinematic abilities.
+ */
+public final class Astralis extends JavaPlugin {
+    public static final MiniMessage MM = MiniMessage.miniMessage();
+    private static Astralis instance;
+
+    private Keys keys;
+    private SigilManager sigils;
+    private StardustManager stardust;
+    private CooldownManager cooldowns;
+    private StatusManager statuses;
+    private TrustManager trust;
+    private AbilityManager abilities;
+    private EventManager events;
+
+    public static Astralis get() { return instance; }
+    public static Component mm(String s) { return MM.deserialize(s); }
+
+    @Override
+    public void onEnable() {
+        instance = this;
+        saveDefaultConfig();
+
+        keys = new Keys(this);
+        sigils = new SigilManager(this);
+        stardust = new StardustManager(this);
+        cooldowns = new CooldownManager();
+        statuses = new StatusManager();
+        trust = new TrustManager(this);
+        abilities = new AbilityManager(this);
+        events = new EventManager(this);
+
+        sigils.registerRecipes();
+
+        getServer().getPluginManager().registerEvents(new AbilityListener(this), this);
+        getServer().getPluginManager().registerEvents(new CombatListener(this), this);
+        getServer().getPluginManager().registerEvents(new SigilListener(this), this);
+
+        PluginCommand cmd = getCommand("astralis");
+        if (cmd != null) {
+            AstralisCommand ac = new AstralisCommand(this);
+            cmd.setExecutor(ac);
+            cmd.setTabCompleter(ac);
+        }
+
+        new StarTask(this).runTaskTimer(this, 20L, 2L);
+        events.startScheduler();
+
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            stardust.load(p);
+            trust.load(p);
+            sigils.discover(p);
+        }
+        getLogger().info("Astralis awakened. The stars are aligned.");
+    }
+
+    @Override
+    public void onDisable() {
+        if (events != null) events.stop(null);
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            stardust.save(p);
+            trust.save(p);
+        }
+        if (sigils != null) sigils.unregisterRecipes();
+    }
+
+    public void reload() {
+        reloadConfig();
+        sigils.unregisterRecipes();
+        sigils.registerRecipes();
+    }
+
+    // ---- config helpers -------------------------------------------------------------
+    /** Reads a number under "constellations." */
+    public double val(String path, double def) { return getConfig().getDouble("constellations." + path, def); }
+
+    public double tierPotency(Tier t) {
+        return getConfig().getDouble("tiers." + t.name().toLowerCase() + ".potency", t == Tier.RADIANT ? 1.3 : 1.0);
+    }
+
+    public double tierCooldownMult(Tier t) {
+        return getConfig().getDouble("tiers." + t.name().toLowerCase() + ".cooldown-multiplier", t == Tier.RADIANT ? 0.8 : 1.0);
+    }
+
+    public int ultCost(Tier t) {
+        return getConfig().getInt("tiers." + t.name().toLowerCase() + ".ultimate-cost", t == Tier.RADIANT ? 85 : 100);
+    }
+
+    public boolean disabledWorld(World w) { return getConfig().getStringList("general.disabled-worlds").contains(w.getName()); }
+
+    public boolean enabled(Constellation c) {
+        return getConfig().getBoolean("constellations." + c.name().toLowerCase() + ".enabled", true);
+    }
+
+    // ---- accessors ------------------------------------------------------------------
+    public Keys keys() { return keys; }
+    public SigilManager sigils() { return sigils; }
+    public StardustManager stardust() { return stardust; }
+    public CooldownManager cooldowns() { return cooldowns; }
+    public StatusManager statuses() { return statuses; }
+    public TrustManager trust() { return trust; }
+    public AbilityManager abilities() { return abilities; }
+    public EventManager events() { return events; }
+}
+
+
+===== FILE: src/main/java/com/astralis/Keys.java =====
+package com.astralis;
+
+import org.bukkit.NamespacedKey;
+
+/** All persistent-data keys used by the plugin. */
+public final class Keys {
+    public final NamespacedKey constellation, tier, owner, ownerName, id, core, received, stardust, trusted, recipeCore, shard;
+
+    public Keys(Astralis p) {
+        constellation = new NamespacedKey(p, "constellation");
+        tier = new NamespacedKey(p, "tier");
+        owner = new NamespacedKey(p, "owner");
+        ownerName = new NamespacedKey(p, "owner_name");
+        id = new NamespacedKey(p, "sigil_id");
+        core = new NamespacedKey(p, "stellar_core");
+        received = new NamespacedKey(p, "received_sigil");
+        stardust = new NamespacedKey(p, "stardust");
+        trusted = new NamespacedKey(p, "trusted");
+        recipeCore = new NamespacedKey(p, "stellar_core_recipe");
+        shard = new NamespacedKey(p, "stardust_shard");
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/command/AstralisCommand.java =====
+package com.astralis.command;
+
+import com.astralis.Astralis;
+import com.astralis.core.*;
+import com.astralis.event.EventManager;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+
+import java.util.*;
+
+/** /astralis (aliases /sigil, /as) - player tools, admin tools and event control. */
+public final class AstralisCommand implements CommandExecutor, TabCompleter {
+    private static final String PREFIX = "<gradient:#5ad7ff:#b57bff><bold>Astralis</bold></gradient> <dark_gray>» <gray>";
+
+    private static final List<String> PLAYER_SUBS = List.of("help", "info", "stats", "trust", "untrust", "trusted", "event");
+    private static final List<String> ADMIN_SUBS = List.of("give", "core", "tier", "remove", "awaken", "reroll",
+            "energy", "cooldown", "cast", "holders", "reload", "selftest");
+    private static final List<String> EVENT_SUBS = List.of("start", "stop", "status", "locate", "list");
+
+    /** Every config path the code reads. /astralis selftest verifies they all exist. */
+    private static final String[] CONFIG_PATHS = {
+            "constellations.andromeda.chains.cooldown",
+            "constellations.andromeda.chains.damage",
+            "constellations.andromeda.chains.range",
+            "constellations.andromeda.chains.root-seconds",
+            "constellations.andromeda.prison.damage",
+            "constellations.andromeda.prison.radius",
+            "constellations.andromeda.prison.seconds",
+            "constellations.aries.charge.cooldown",
+            "constellations.aries.charge.damage",
+            "constellations.aries.charge.shield-disable-seconds",
+            "constellations.aries.charge.ticks",
+            "constellations.aries.momentum-bonus",
+            "constellations.aries.quake.damage",
+            "constellations.aries.quake.length",
+            "constellations.cassiopeia.aegis.absorption-amplifier",
+            "constellations.cassiopeia.aegis.cooldown",
+            "constellations.cassiopeia.aegis.reflect",
+            "constellations.cassiopeia.aegis.seconds",
+            "constellations.cassiopeia.gravity.collapse-damage",
+            "constellations.cassiopeia.gravity.radius",
+            "constellations.cassiopeia.gravity.seconds",
+            "constellations.cassiopeia.poise-threshold",
+            "constellations.draco.breath.cooldown",
+            "constellations.draco.breath.damage",
+            "constellations.draco.breath.fire-seconds",
+            "constellations.draco.breath.range",
+            "constellations.draco.wyrmfall.damage",
+            "constellations.draco.wyrmfall.radius",
+            "constellations.gemini.dodge-chance",
+            "constellations.gemini.echo.ratio",
+            "constellations.gemini.echo.seconds",
+            "constellations.gemini.step.cooldown",
+            "constellations.gemini.step.damage",
+            "constellations.gemini.step.radius",
+            "constellations.gemini.step.range",
+            "constellations.orion.arrow-bonus",
+            "constellations.orion.beam.cooldown",
+            "constellations.orion.beam.damage",
+            "constellations.orion.beam.mark-seconds",
+            "constellations.orion.beam.mark-bonus",
+            "constellations.orion.beam.range",
+            "constellations.orion.volley.damage",
+            "constellations.orion.volley.radius",
+            "constellations.orion.volley.seconds",
+            "constellations.phoenix.nova.damage",
+            "constellations.phoenix.nova.heal",
+            "constellations.phoenix.nova.radius",
+            "constellations.phoenix.revive.burst-damage",
+            "constellations.phoenix.revive.cooldown",
+            "constellations.phoenix.revive.health",
+            "constellations.phoenix.wings.cooldown",
+            "constellations.phoenix.wings.damage",
+            "tiers.dim.potency",
+            "tiers.radiant.potency",
+            "tiers.dim.ultimate-cost",
+            "tiers.radiant.ultimate-cost",
+            "counter-ring.bonus",
+            "counter-ring.penalty",
+            "general.ability-damage-scale",
+            "stardust.max",
+            "stardust.kill-bonus",
+            "general.max-sigils-carried",
+            "events.starfall.minutes",
+            "events.convergence.capture-seconds",
+            "events.eclipse.multiplier"
+    };
+
+    private final Astralis plugin;
+
+    public AstralisCommand(Astralis plugin) { this.plugin = plugin; }
+
+    // ------------------------------------------------------------------ helpers
+    private void msg(CommandSender s, String mini) { s.sendMessage(Astralis.mm(PREFIX + mini)); }
+    private void raw(CommandSender s, String mini) { s.sendMessage(Astralis.mm(mini)); }
+    private static String esc(String s) { return Astralis.MM.escapeTags(s); }
+
+    private boolean admin(CommandSender s) {
+        if (s.hasPermission("astralis.admin")) return true;
+        msg(s, "<red>You don't have permission to do that.");
+        return false;
+    }
+
+    private Player online(CommandSender s, String name) {
+        Player t = Bukkit.getPlayerExact(name);
+        if (t == null) msg(s, "<red>Player not found: <white>" + esc(name));
+        return t;
+    }
+
+    private Constellation constellation(CommandSender s, String name) {
+        Constellation c = Constellation.parse(name);
+        if (c == null) msg(s, "<red>Unknown constellation: <white>" + esc(name) + "<gray>. Try: <white>" + names());
+        return c;
+    }
+
+    private static String names() {
+        StringBuilder sb = new StringBuilder();
+        for (Constellation c : Constellation.values()) { if (sb.length() > 0) sb.append(", "); sb.append(c.display().toLowerCase()); }
+        return sb.toString();
+    }
+
+    // ------------------------------------------------------------------ dispatch
+    @Override
+    public boolean onCommand(CommandSender s, Command cmd, String label, String[] a) {
+        if (a.length == 0) { help(s); return true; }
+        switch (a[0].toLowerCase(Locale.ROOT)) {
+            case "help", "?" -> help(s);
+            case "info", "list" -> info(s, a);
+            case "stats" -> stats(s, a);
+            case "trust" -> trust(s, a, true);
+            case "untrust" -> trust(s, a, false);
+            case "trusted" -> trusted(s);
+            case "event", "events" -> event(s, a);
+            case "give" -> { if (admin(s)) give(s, a); }
+            case "core" -> { if (admin(s)) core(s, a); }
+            case "tier" -> { if (admin(s)) tier(s, a); }
+            case "remove" -> { if (admin(s)) remove(s, a); }
+            case "awaken" -> { if (admin(s)) awaken(s, a); }
+            case "reroll" -> { if (admin(s)) reroll(s, a); }
+            case "energy" -> { if (admin(s)) energy(s, a); }
+            case "cooldown", "cd" -> { if (admin(s)) cooldown(s, a); }
+            case "cast" -> { if (admin(s)) cast(s, a); }
+            case "holders" -> { if (admin(s)) holders(s); }
+            case "reload" -> { if (admin(s)) { plugin.reload(); msg(s, "<green>Configuration reloaded."); } }
+            case "selftest" -> { if (admin(s)) selftest(s); }
+            default -> msg(s, "<red>Unknown subcommand. <gray>Try <white>/astralis help");
+        }
+        return true;
+    }
+
+    // ------------------------------------------------------------------ help / info
+    private void help(CommandSender s) {
+        raw(s, "<gradient:#5ad7ff:#b57bff><bold>✦ ASTRALIS</bold></gradient> <dark_gray>— <gray>constellation sigils");
+        raw(s, "<white>/astralis info <gray>[constellation] <dark_gray>- <gray>abilities & counters");
+        raw(s, "<white>/astralis stats <gray>[player] <dark_gray>- <gray>sigil, Stardust, cooldowns");
+        raw(s, "<white>/astralis trust|untrust <gray>[player] <dark_gray>- <gray>never hurt friends");
+        raw(s, "<white>/astralis trusted <dark_gray>- <gray>your trust list");
+        raw(s, "<white>/astralis event <gray>status|locate|list");
+        raw(s, "<dark_gray>Right-click: ability. Sneak + right-click (or F): Zenith.");
+        if (s.hasPermission("astralis.admin")) {
+            raw(s, "<gold>Admin:");
+            raw(s, "<white>give <gray>[player] [constellation] [dim|radiant]  <white>core <gray>[player] [n]  <white>tier <gray>[player] [tier]");
+            raw(s, "<white>remove <gray>[player] [constellation]  <white>awaken <gray>[player] [constellation]  <white>reroll <gray>[player]");
+            raw(s, "<white>energy <gray>[player] set|add|take|max|reset [n]  <white>cooldown <gray>[player]  <white>cast <gray>[player] primary|ultimate");
+            raw(s, "<white>holders  reload  selftest  <white>event start <gray>[starfall|convergence|eclipse] [minutes]  <white>event stop");
+        }
+    }
+
+    private void info(CommandSender s, String[] a) {
+        if (a.length < 2) {
+            raw(s, "<gradient:#5ad7ff:#b57bff><bold>✦ The Constellations</bold></gradient> <dark_gray>(each beats one rival and falls to another)");
+            for (Constellation c : Constellation.ring()) {
+                raw(s, " " + c.tag() + "✦ " + c.display() + " <gray>— " + c.title() + " <dark_gray>| <green>beats " + c.prey().display()
+                        + " <dark_gray>| <red>falls to " + c.predator().display());
+            }
+            for (Constellation c : Constellation.mythics()) {
+                raw(s, " " + c.tag() + "✦ " + c.display() + " <gray>— " + c.title() + " <dark_gray>| <gold>MYTHICAL <gray>(events only, outside the ring)");
+            }
+            raw(s, "<gray>More detail: <white>/astralis info [constellation]");
+            return;
+        }
+        Constellation c = constellation(s, a[1]);
+        if (c == null) return;
+        raw(s, c.tag() + "<bold>✦ " + c.display() + "</bold> <gray>— " + c.title() + (c.mythic() ? " <gold>[MYTHICAL]" : ""));
+        raw(s, " " + c.tag() + "Passive <dark_gray>» <white>" + c.passiveName() + "<gray>: " + c.passiveDesc());
+        raw(s, " " + c.tag() + "Right-click <dark_gray>» <white>" + c.primaryName() + "<gray>: " + c.primaryDesc());
+        raw(s, " " + c.tag() + "Sneak+Right-click <dark_gray>» <white>" + c.ultName() + "<gray>: " + c.ultDesc());
+        if (c.mythic()) raw(s, " <gold>Mythical: <gray>outside the counter ring (no bonus, no penalty).");
+        else raw(s, " <green>Beats " + c.prey().display() + " <dark_gray>| <red>Weak to " + c.predator().display());
+    }
+
+    private void stats(CommandSender s, String[] a) {
+        Player t;
+        if (a.length > 1) { t = online(s, a[1]); if (t == null) return; }
+        else if (s instanceof Player p) t = p;
+        else { msg(s, "<red>Specify a player."); return; }
+
+        SigilManager sm = plugin.sigils();
+        Sigil sg = sm.active(t);
+        raw(s, "<gradient:#5ad7ff:#b57bff><bold>✦ " + esc(t.getName()) + "</bold></gradient>");
+        if (sg == null) { raw(s, " <gray>No sigil."); return; }
+        Constellation c = sg.constellation();
+        raw(s, " " + c.tag() + "✦ " + c.display() + " <gray>(" + sg.tier().label() + ")  potency <white>"
+                + String.format("%.2f", sm.potency(t, sg)) + (sg.owner() != null && !sg.owner().equals(t.getUniqueId()) ? " <red>(unattuned)" : ""));
+        raw(s, " <gray>Stardust: <white>" + (int) plugin.stardust().get(t) + "<gray>/" + (int) plugin.stardust().max()
+                + " <dark_gray>(Zenith costs " + plugin.ultCost(sg.tier()) + ")");
+        UUID id = t.getUniqueId();
+        raw(s, " <gray>Primary: <white>" + fmt(plugin.cooldowns().remaining(id, c.name() + ":P"))
+                + " <gray>| Zenith: <white>" + fmt(plugin.cooldowns().remaining(id, c.name() + ":U")));
+        raw(s, " <gray>Carrying <white>" + sm.carried(t) + "<gray>/" + plugin.getConfig().getInt("general.max-sigils-carried", 2) + " sigils");
+    }
+
+    private static String fmt(double sec) { return sec <= 0 ? "ready" : String.format("%.1fs", sec); }
+
+    // ------------------------------------------------------------------ trust
+    private void trust(CommandSender s, String[] a, boolean add) {
+        if (!(s instanceof Player p)) { msg(s, "<red>Players only."); return; }
+        if (a.length < 2) { msg(s, "<gray>Usage: <white>/astralis " + (add ? "trust" : "untrust") + " [player]"); return; }
+        OfflinePlayer t = Bukkit.getPlayerExact(a[1]);
+        if (t == null) t = Bukkit.getOfflinePlayerIfCached(a[1]);
+        if (t == null) { msg(s, "<red>I don't know a player called <white>" + esc(a[1])); return; }
+        if (t.getUniqueId().equals(p.getUniqueId())) { msg(s, "<red>You already trust yourself."); return; }
+        String name = esc(t.getName() == null ? a[1] : t.getName());
+        if (add) msg(s, plugin.trust().add(p, t.getUniqueId()) ? "<green>Your abilities will no longer hurt <white>" + name + "<green>." : "<gray>You already trust <white>" + name);
+        else msg(s, plugin.trust().remove(p, t.getUniqueId()) ? "<yellow>You no longer trust <white>" + name + "<yellow>." : "<gray>You were not trusting <white>" + name);
+    }
+
+    private void trusted(CommandSender s) {
+        if (!(s instanceof Player p)) { msg(s, "<red>Players only."); return; }
+        Set<UUID> set = plugin.trust().list(p.getUniqueId());
+        if (set.isEmpty()) { msg(s, "<gray>You trust no one."); return; }
+        List<String> names = new ArrayList<>();
+        for (UUID u : set) { String n = Bukkit.getOfflinePlayer(u).getName(); names.add(esc(n == null ? u.toString() : n)); }
+        msg(s, "<gray>Trusted: <white>" + String.join("<gray>, <white>", names));
+    }
+
+    // ------------------------------------------------------------------ admin: items
+    private void give(CommandSender s, String[] a) {
+        if (a.length < 3) { msg(s, "<gray>Usage: <white>/astralis give [player] [constellation] [dim|radiant]"); return; }
+        Player t = online(s, a[1]);
+        if (t == null) return;
+        Constellation c = constellation(s, a[2]);
+        if (c == null) return;
+        Tier tier = a.length > 3 ? Tier.parse(a[3]) : Tier.DIM;
+        if (tier == null) { msg(s, "<red>Tier must be dim or radiant."); return; }
+        plugin.sigils().giveOrDrop(t, plugin.sigils().create(c, tier, t.getUniqueId(), t.getName()));
+        msg(s, "<green>Gave " + c.tag() + c.display() + " (" + tier.label() + ") <green>to <white>" + esc(t.getName()));
+    }
+
+    private void core(CommandSender s, String[] a) {
+        if (a.length < 2) { msg(s, "<gray>Usage: <white>/astralis core [player] [amount]"); return; }
+        Player t = online(s, a[1]);
+        if (t == null) return;
+        int n = a.length > 2 ? parseInt(a[2], 1) : 1;
+        for (int i = 0; i < Math.max(1, Math.min(n, 64)); i++) plugin.sigils().giveOrDrop(t, plugin.sigils().createCore());
+        msg(s, "<green>Gave <white>" + n + " <green>Stellar Core(s) to <white>" + esc(t.getName()));
+    }
+
+    private void tier(CommandSender s, String[] a) {
+        if (a.length < 3) { msg(s, "<gray>Usage: <white>/astralis tier [player] [dim|radiant] <dark_gray>(changes the sigil in their main hand, else the first one carried)"); return; }
+        Player t = online(s, a[1]);
+        if (t == null) return;
+        Tier tier = Tier.parse(a[2]);
+        if (tier == null) { msg(s, "<red>Tier must be dim or radiant."); return; }
+        PlayerInventory inv = t.getInventory();
+        int slot = -1;
+        if (plugin.sigils().isSigil(inv.getItemInMainHand())) slot = inv.getHeldItemSlot();
+        else for (int i = 0; i < inv.getSize() && slot < 0; i++) if (plugin.sigils().isSigil(inv.getItem(i))) slot = i;
+        if (slot < 0) { msg(s, "<red>" + esc(t.getName()) + " carries no sigil."); return; }
+        inv.setItem(slot, plugin.sigils().withTier(inv.getItem(slot), tier));
+        msg(s, "<green>Set sigil tier to <white>" + tier.label() + "<green> for <white>" + esc(t.getName()));
+    }
+
+    private int removeSigils(Player t, Constellation only) {
+        PlayerInventory inv = t.getInventory();
+        int n = 0;
+        for (int i = 0; i < inv.getSize(); i++) {
+            Sigil sg = plugin.sigils().read(inv.getItem(i));
+            if (sg != null && (only == null || sg.constellation() == only)) { inv.setItem(i, null); n++; }
+        }
+        return n;
+    }
+
+    private void remove(CommandSender s, String[] a) {
+        if (a.length < 2) { msg(s, "<gray>Usage: <white>/astralis remove [player] [constellation]"); return; }
+        Player t = online(s, a[1]);
+        if (t == null) return;
+        Constellation only = null;
+        if (a.length > 2) { only = constellation(s, a[2]); if (only == null) return; }
+        msg(s, "<green>Removed <white>" + removeSigils(t, only) + "<green> sigil(s) from <white>" + esc(t.getName()));
+    }
+
+    private void awaken(CommandSender s, String[] a) {
+        if (a.length < 2) { msg(s, "<gray>Usage: <white>/astralis awaken [player] [constellation]"); return; }
+        Player t = online(s, a[1]);
+        if (t == null) return;
+        Constellation c;
+        if (a.length > 2) { c = constellation(s, a[2]); if (c == null) return; }
+        else c = plugin.sigils().pickBalanced();
+        plugin.sigils().awaken(t, c);
+        msg(s, "<green>Awakening <white>" + esc(t.getName()) + "<green> as " + c.tag() + c.display());
+    }
+
+    private void reroll(CommandSender s, String[] a) {
+        if (a.length < 2) { msg(s, "<gray>Usage: <white>/astralis reroll [player]"); return; }
+        Player t = online(s, a[1]);
+        if (t == null) return;
+        int n = removeSigils(t, null);
+        Constellation c = plugin.sigils().pickBalanced();
+        plugin.sigils().awaken(t, c);
+        msg(s, "<green>Removed " + n + " sigil(s) and awakened <white>" + esc(t.getName()) + "<green> as " + c.tag() + c.display());
+    }
+
+    // ------------------------------------------------------------------ admin: state
+    private void energy(CommandSender s, String[] a) {
+        if (a.length < 3) { msg(s, "<gray>Usage: <white>/astralis energy [player] set|add|take|max|reset [amount]"); return; }
+        Player t = online(s, a[1]);
+        if (t == null) return;
+        StardustManager sd = plugin.stardust();
+        double n = a.length > 3 ? parseDouble(a[3], 0) : 0;
+        switch (a[2].toLowerCase(Locale.ROOT)) {
+            case "set" -> sd.set(t, n);
+            case "add" -> sd.add(t, n);
+            case "take" -> sd.set(t, sd.get(t) - n);
+            case "max" -> sd.set(t, sd.max());
+            case "reset" -> sd.set(t, 0);
+            default -> { msg(s, "<red>Use set, add, take, max or reset."); return; }
+        }
+        msg(s, "<white>" + esc(t.getName()) + "<gray> now has <white>" + (int) sd.get(t) + "<gray> Stardust.");
+    }
+
+    private void cooldown(CommandSender s, String[] a) {
+        if (a.length < 2) { msg(s, "<gray>Usage: <white>/astralis cooldown [player]"); return; }
+        Player t = online(s, a[1]);
+        if (t == null) return;
+        plugin.cooldowns().clear(t.getUniqueId());
+        for (Constellation c : Constellation.values()) t.setCooldown(c.material(), 0);
+        msg(s, "<green>Cleared all cooldowns for <white>" + esc(t.getName()));
+    }
+
+    private void cast(CommandSender s, String[] a) {
+        if (a.length < 3) { msg(s, "<gray>Usage: <white>/astralis cast [player] primary|ultimate <dark_gray>(they must hold a sigil)"); return; }
+        Player t = online(s, a[1]);
+        if (t == null) return;
+        if (!plugin.sigils().isSigil(t.getInventory().getItemInMainHand())) { msg(s, "<red>" + esc(t.getName()) + " is not holding a sigil."); return; }
+        switch (a[2].toLowerCase(Locale.ROOT)) {
+            case "primary", "p", "1" -> plugin.abilities().primary(t);
+            case "ultimate", "ult", "u", "zenith", "2" -> plugin.abilities().ultimate(t);
+            default -> msg(s, "<red>Use primary or ultimate.");
+        }
+    }
+
+    private void holders(CommandSender s) {
+        raw(s, "<gradient:#5ad7ff:#b57bff><bold>✦ Sigil holders</bold></gradient>");
+        int shown = 0;
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            Sigil sg = plugin.sigils().active(p);
+            if (sg == null) continue;
+            shown++;
+            raw(s, " " + sg.constellation().tag() + "✦ " + sg.constellation().display() + " <gray>(" + sg.tier().label() + ") <white>"
+                    + esc(p.getName()) + " <dark_gray>| <gray>" + (int) plugin.stardust().get(p) + " Stardust");
+        }
+        if (shown == 0) raw(s, " <gray>No online player holds a sigil.");
+        for (UUID id : plugin.sigils().tracked()) {
+            Entity e = Bukkit.getEntity(id);
+            if (e instanceof Item item && item.isValid()) {
+                Sigil sg = plugin.sigils().read(item.getItemStack());
+                if (sg == null) continue;
+                var l = item.getLocation();
+                raw(s, " " + sg.constellation().tag() + "✦ " + sg.constellation().display() + " <gray>on the ground at <white>"
+                        + l.getBlockX() + ", " + l.getBlockY() + ", " + l.getBlockZ() + " <dark_gray>(" + esc(l.getWorld().getName()) + ")");
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ events
+    private void event(CommandSender s, String[] a) {
+        EventManager ev = plugin.events();
+        String sub = a.length > 1 ? a[1].toLowerCase(Locale.ROOT) : "status";
+        switch (sub) {
+            case "status" -> msg(s, ev.status());
+            case "list" -> {
+                for (EventManager.Type t : EventManager.Type.values()) {
+                    raw(s, " <gold>✦ <white>" + t.name().toLowerCase() + " <dark_gray>(" + t.defaultMinutes() + " min) <gray>" + t.blurb());
+                }
+            }
+            case "locate" -> {
+                if (s instanceof Player p) msg(s, ev.locate(p));
+                else msg(s, "<red>Players only.");
+            }
+            case "start" -> {
+                if (!admin(s)) return;
+                if (a.length < 3) { msg(s, "<gray>Usage: <white>/astralis event start [starfall|convergence|eclipse] [minutes]"); return; }
+                EventManager.Type t = EventManager.Type.parse(a[2]);
+                if (t == null) { msg(s, "<red>Unknown event. Try <white>starfall<red>, <white>convergence<red> or <white>eclipse<red>."); return; }
+                int minutes = a.length > 3 ? parseInt(a[3], 0) : 0;
+                if (ev.running()) { msg(s, "<red>An event is already running: <white>" + ev.active().label() + "<red>. Use <white>/astralis event stop<red> first."); return; }
+                if (!ev.start(t, minutes)) msg(s, "<red>Could not start that event (no valid location?).");
+            }
+            case "stop" -> {
+                if (!admin(s)) return;
+                if (!ev.running()) { msg(s, "<gray>No event is running."); return; }
+                ev.stop("The event was ended early by an admin.");
+            }
+            default -> msg(s, "<gray>Usage: <white>/astralis event status|locate|list|start|stop");
+        }
+    }
+
+    // ------------------------------------------------------------------ selftest
+    private void selftest(CommandSender s) {
+        int pass = 0, fail = 0;
+        List<String> report = new ArrayList<>();
+        SigilManager sm = plugin.sigils();
+
+        // 1. every sigil round-trips through item NBT
+        for (Constellation c : Constellation.values()) {
+            for (Tier t : Tier.values()) {
+                UUID owner = UUID.randomUUID();
+                ItemStack it = sm.create(c, t, owner, "Tester");
+                Sigil r = sm.read(it);
+                boolean ok = r != null && r.constellation() == c && r.tier() == t && owner.equals(r.owner()) && r.id() != null;
+                if (ok) pass++; else { fail++; report.add("round-trip failed: " + c + "/" + t); }
+            }
+        }
+        // 2. counter ring is a clean 5-cycle; mythicals are outside it
+        for (Constellation c : Constellation.ring()) {
+            boolean ok = c.prey().predator() == c && c.predator().prey() == c && c.prey() != c;
+            if (ok) pass++; else { fail++; report.add("ring broken at " + c); }
+        }
+        Constellation walk = Constellation.ring().get(0);
+        for (int i = 0; i < Constellation.ring().size(); i++) walk = walk.prey();
+        if (walk == Constellation.ring().get(0)) pass++; else { fail++; report.add("ring does not close after 5 steps"); }
+        for (Constellation c : Constellation.mythics()) {
+            if (c.prey() == null && c.predator() == null) pass++; else { fail++; report.add(c + " should be outside the ring"); }
+        }
+        // 3. the Stellar Core is recognised and is not mistaken for a sigil
+        ItemStack core = sm.createCore();
+        if (sm.isCore(core) && !sm.isSigil(core)) pass++; else { fail++; report.add("core item detection"); }
+        // 4. cooldowns & statuses
+        UUID id = UUID.randomUUID();
+        plugin.cooldowns().set(id, "T", 5);
+        double rem = plugin.cooldowns().remaining(id, "T");
+        if (rem > 4.5 && rem <= 5.0 && !plugin.cooldowns().ready(id, "T")) pass++; else { fail++; report.add("cooldown timing"); }
+        plugin.cooldowns().clear(id);
+        plugin.statuses().apply(id, StatusManager.Status.ECHO, 40, null);
+        if (plugin.statuses().has(id, StatusManager.Status.ECHO)) pass++; else { fail++; report.add("status apply"); }
+        plugin.statuses().clearAll(id);
+        if (!plugin.statuses().has(id, StatusManager.Status.ECHO)) pass++; else { fail++; report.add("status clear"); }
+        // 5. config completeness
+        for (String path : CONFIG_PATHS) {
+            if (plugin.getConfig().contains(path)) pass++; else { fail++; report.add("missing config key: " + path); }
+        }
+        // 6. every constellation has a kit
+        for (Constellation c : Constellation.values()) {
+            if (plugin.abilities().kit(c) != null) pass++; else { fail++; report.add("no kit for " + c); }
+        }
+
+        msg(s, (fail == 0 ? "<green>" : "<red>") + "Selftest: " + pass + " passed, " + fail + " failed.");
+        for (String r : report) raw(s, " <red>✘ <gray>" + esc(r));
+    }
+
+    // ------------------------------------------------------------------ parsing
+    private static int parseInt(String s, int def) { try { return Integer.parseInt(s); } catch (NumberFormatException e) { return def; } }
+    private static double parseDouble(String s, double def) { try { return Double.parseDouble(s); } catch (NumberFormatException e) { return def; } }
+
+    // ------------------------------------------------------------------ tab completion
+    @Override
+    public List<String> onTabComplete(CommandSender s, Command cmd, String label, String[] a) {
+        boolean adm = s.hasPermission("astralis.admin");
+        List<String> out = new ArrayList<>();
+        if (a.length == 1) {
+            out.addAll(PLAYER_SUBS);
+            if (adm) out.addAll(ADMIN_SUBS);
+        } else {
+            String sub = a[0].toLowerCase(Locale.ROOT);
+            switch (a.length) {
+                case 2 -> {
+                    switch (sub) {
+                        case "info" -> addConstellations(out);
+                        case "trust", "untrust", "stats" -> addPlayers(out);
+                        case "event", "events" -> { out.addAll(EVENT_SUBS); }
+                        default -> { if (adm && ADMIN_SUBS.contains(sub) && !sub.equals("reload") && !sub.equals("holders") && !sub.equals("selftest")) addPlayers(out); }
+                    }
+                }
+                case 3 -> {
+                    if (!adm) break;
+                    switch (sub) {
+                        case "give", "remove", "awaken" -> addConstellations(out);
+                        case "tier" -> out.addAll(List.of("dim", "radiant"));
+                        case "energy" -> out.addAll(List.of("set", "add", "take", "max", "reset"));
+                        case "cast" -> out.addAll(List.of("primary", "ultimate"));
+                        case "event", "events" -> { if (a[1].equalsIgnoreCase("start")) for (EventManager.Type t : EventManager.Type.values()) out.add(t.name().toLowerCase()); }
+                        default -> { }
+                    }
+                }
+                case 4 -> {
+                    if (adm && sub.equals("give")) out.addAll(List.of("dim", "radiant"));
+                    if (adm && (sub.equals("event") || sub.equals("events")) && a[1].equalsIgnoreCase("start")) out.addAll(List.of("5", "10", "20"));
+                }
+                default -> { }
+            }
+        }
+        String last = a[a.length - 1].toLowerCase(Locale.ROOT);
+        out.removeIf(x -> !x.toLowerCase(Locale.ROOT).startsWith(last));
+        return out;
+    }
+
+    private void addConstellations(List<String> out) { for (Constellation c : Constellation.values()) out.add(c.display().toLowerCase()); }
+    private void addPlayers(List<String> out) { for (Player p : Bukkit.getOnlinePlayers()) out.add(p.getName()); }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/AbilityManager.java =====
+package com.astralis.core;
+
+import com.astralis.Astralis;
+import com.astralis.kit.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.GameMode;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
+
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.UUID;
+
+/** Gatekeeper for casting: cooldowns, Stardust cost, world rules and feedback. */
+public final class AbilityManager {
+    private final Astralis plugin;
+    private final Map<Constellation, Kit> kits = new EnumMap<>(Constellation.class);
+
+    public AbilityManager(Astralis plugin) {
+        this.plugin = plugin;
+        kits.put(Constellation.ARIES, new AriesKit(plugin));
+        kits.put(Constellation.ORION, new OrionKit(plugin));
+        kits.put(Constellation.DRACO, new DracoKit(plugin));
+        kits.put(Constellation.CASSIOPEIA, new CassiopeiaKit(plugin));
+        kits.put(Constellation.GEMINI, new GeminiKit(plugin));
+        kits.put(Constellation.PHOENIX, new PhoenixKit(plugin));
+        kits.put(Constellation.ANDROMEDA, new AndromedaKit(plugin));
+    }
+
+    public Kit kit(Constellation c) { return kits.get(c); }
+
+    private boolean canCast(Player p, Sigil s) {
+        if (p.isDead() || p.getGameMode() == GameMode.SPECTATOR) return false;
+        if (plugin.disabledWorld(p.getWorld())) { deny(p, "Sigils are dormant in this world."); return false; }
+        if (!plugin.enabled(s.constellation())) { deny(p, "This constellation is disabled."); return false; }
+        return true;
+    }
+
+    public void primary(Player p) {
+        Sigil s = plugin.sigils().read(p.getInventory().getItemInMainHand());
+        if (s == null || !canCast(p, s)) return;
+        UUID id = p.getUniqueId();
+        String key = s.constellation().name() + ":P";
+        double left = plugin.cooldowns().remaining(id, key);
+        if (left > 0) { deny(p, String.format("%s ready in %.1fs", s.constellation().primaryName(), left)); return; }
+
+        Kit kit = kits.get(s.constellation());
+        if (kit.primary(p, plugin.sigils().potency(p, s))) {
+            double cd = kit.primaryBaseCooldown() * plugin.tierCooldownMult(s.tier());
+            plugin.cooldowns().set(id, key, cd);
+            p.setCooldown(s.constellation().material(), (int) (cd * 20));
+        }
+    }
+
+    public void ultimate(Player p) {
+        Sigil s = plugin.sigils().read(p.getInventory().getItemInMainHand());
+        if (s == null || !canCast(p, s)) return;
+        UUID id = p.getUniqueId();
+        Constellation c = s.constellation();
+        String key = c.name() + ":U";
+
+        double left = plugin.cooldowns().remaining(id, key);
+        if (left > 0) { deny(p, String.format("Zenith ready in %.0fs", Math.ceil(left))); return; }
+        int cost = plugin.ultCost(s.tier());
+        double have = plugin.stardust().get(p);
+        if (have < cost) { deny(p, String.format("Not enough Stardust (%d/%d). Fight to gather more.", (int) have, cost)); return; }
+
+        Kit kit = kits.get(c);
+        if (kit.ultimate(p, plugin.sigils().potency(p, s))) {
+            plugin.stardust().add(p, -cost);
+            plugin.cooldowns().set(id, key, plugin.getConfig().getDouble("general.ultimate-cooldown", 30));
+            p.sendActionBar(c.text("★ ZENITH — " + c.ultName() + " ★"));
+            p.getWorld().playSound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.2f, 1.7f);
+        }
+    }
+
+    private void deny(Player p, String msg) {
+        p.sendActionBar(Component.text(msg, NamedTextColor.RED));
+        p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.6f, 1.2f);
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/Constellation.java =====
+package com.astralis.core;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
+import org.bukkit.Color;
+import org.bukkit.Material;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Five ring constellations plus two Mythicals.
+ * Ring order (declaration order of the non-mythics) IS the counter ring:
+ * ARIES > ORION > DRACO > CASSIOPEIA > GEMINI > ARIES.
+ * Mythicals sit outside the ring: no counter bonus and no counter penalty.
+ */
+public enum Constellation {
+    ARIES("Aries", "The Ram", "#ff5470", Material.COPPER_INGOT, false,
+            "Momentum", "Sprinting hits hit harder and hurl enemies backwards.",
+            "Rampart Charge", "Dash forward, smashing through enemies and shattering raised shields.",
+            "Worldbreaker Horn", "Split the earth with a fissure that launches everything in its path.",
+            new double[][]{{-2.2, 1.5}, {-0.6, 2.3}, {1.0, 1.3}, {2.5, -0.2}, {1.4, -1.8}},
+            new int[][]{{0, 1}, {1, 2}, {2, 3}, {3, 4}}),
+
+    ORION("Orion", "The Hunter", "#5ad7ff", Material.PRISMARINE_CRYSTALS, false,
+            "Steady Aim", "Your arrows deal bonus damage.",
+            "Starpiercer Beam", "Fire a piercing beam of starlight. Struck enemies are marked: they glow and take extra damage from you.",
+            "Hunter's Volley", "Call down a rain of star-arrows on the area you are aiming at.",
+            new double[][]{{-1.3, 3.0}, {1.3, 3.0}, {-0.5, 0.3}, {0.0, 0.0}, {0.5, -0.3}, {-1.4, -3.0}, {1.4, -3.0}, {2.6, 1.2}},
+            new int[][]{{0, 1}, {0, 2}, {1, 4}, {2, 3}, {3, 4}, {2, 5}, {4, 6}, {1, 7}}),
+
+    DRACO("Draco", "The Dragon", "#ff8a2b", Material.FIRE_CHARGE, false,
+            "Dragonhide", "Permanent fire resistance.",
+            "Ember Breath", "Exhale a roaring cone of flame that scorches everything in front of you.",
+            "Wyrmfall", "Soar skyward, then crash down in a blazing shockwave.",
+            new double[][]{{-3.2, 2.2}, {-2.2, 0.6}, {-0.8, 1.3}, {0.6, 0.0}, {1.6, 1.2}, {2.7, 0.0}, {3.1, -1.5}, {1.8, -2.6}},
+            new int[][]{{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}}),
+
+    CASSIOPEIA("Cassiopeia", "The Queen", "#b57bff", Material.AMETHYST_SHARD, false,
+            "Royal Poise", "Gain Resistance while badly wounded.",
+            "Starlit Aegis", "Wrap yourself in a barrier of stars: bonus absorption and a share of melee damage reflected.",
+            "Crown of Gravity", "Create a gravity well that drags and slows enemies while shielding you, then collapses.",
+            new double[][]{{-4.0, 1.2}, {-2.0, -1.6}, {0.0, 1.0}, {2.0, -1.6}, {4.0, 1.2}},
+            new int[][]{{0, 1}, {1, 2}, {2, 3}, {3, 4}}),
+
+    GEMINI("Gemini", "The Twins", "#6ff2c5", Material.ECHO_SHARD, false,
+            "Afterimage", "A chance to fully dodge melee hits, followed by a burst of speed.",
+            "Mirror Step", "Blink forward. Your afterimage lingers, then detonates and pulls enemies in.",
+            "Twin Echo", "Your twin joins the fight: every melee hit is echoed a moment later.",
+            new double[][]{{-1.6, 3.0}, {-1.6, 0.0}, {-1.6, -3.0}, {1.6, 3.0}, {1.6, 0.0}, {1.6, -3.0}},
+            new int[][]{{0, 1}, {1, 2}, {3, 4}, {4, 5}, {1, 4}, {0, 3}, {2, 5}}),
+
+    // ------------------------------------------------------------------ MYTHICALS
+    PHOENIX("Phoenix", "The Reborn", "#ffe27a", Material.BLAZE_ROD, true,
+            "Undying Ember", "A killing blow is cheated every few minutes: you burst into flame and rise again.",
+            "Cinder Wings", "Beat your wings to surge forward, trailing fire that scorches anything you pass through.",
+            "Rebirth Nova", "Burn away every affliction, heal yourself, and detonate in a nova of golden flame.",
+            new double[][]{{0.0, 3.5}, {-3.5, 1.5}, {-1.5, 0.8}, {0.0, 0.5}, {1.5, 0.8}, {3.5, 1.5}, {0.0, -1.5}, {-1.0, -3.5}, {1.0, -3.5}},
+            new int[][]{{0, 3}, {3, 2}, {2, 1}, {3, 4}, {4, 5}, {3, 6}, {6, 7}, {6, 8}}),
+
+    ANDROMEDA("Andromeda", "The Chained", "#9aa5ff", Material.NAUTILUS_SHELL, true,
+            "Unbound", "Slowing and weakening effects wear off almost instantly.",
+            "Astral Chains", "Lash out with starlit chains: the first enemy struck is yanked toward you and bound in place.",
+            "Constellation Prison", "Raise a cage of stars around the target area. Enemies inside cannot escape and burn against the bars.",
+            new double[][]{{-4.0, -1.0}, {-2.5, 0.3}, {-1.0, -0.4}, {0.5, 0.8}, {2.0, 0.0}, {3.5, 1.4}, {2.0, -2.0}, {2.0, -3.5}},
+            new int[][]{{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {4, 6}, {6, 7}});
+
+    private static final List<Constellation> RING = Arrays.stream(values()).filter(c -> !c.mythic).toList();
+
+    private final String display, title, passiveName, passiveDesc, primaryName, primaryDesc, ultName, ultDesc;
+    private final TextColor color;
+    private final Material material;
+    private final boolean mythic;
+    private final double[][] stars;
+    private final int[][] links;
+
+    Constellation(String display, String title, String hex, Material material, boolean mythic,
+                  String passiveName, String passiveDesc, String primaryName, String primaryDesc,
+                  String ultName, String ultDesc, double[][] stars, int[][] links) {
+        this.display = display;
+        this.title = title;
+        this.color = TextColor.fromHexString(hex);
+        this.material = material;
+        this.mythic = mythic;
+        this.passiveName = passiveName;
+        this.passiveDesc = passiveDesc;
+        this.primaryName = primaryName;
+        this.primaryDesc = primaryDesc;
+        this.ultName = ultName;
+        this.ultDesc = ultDesc;
+        this.stars = stars;
+        this.links = links;
+    }
+
+    public String display() { return display; }
+    public String title() { return title; }
+    public TextColor color() { return color; }
+    public Material material() { return material; }
+    public boolean mythic() { return mythic; }
+    public String passiveName() { return passiveName; }
+    public String passiveDesc() { return passiveDesc; }
+    public String primaryName() { return primaryName; }
+    public String primaryDesc() { return primaryDesc; }
+    public String ultName() { return ultName; }
+    public String ultDesc() { return ultDesc; }
+    public double[][] stars() { return stars; }
+    public int[][] links() { return links; }
+
+    /** MiniMessage color tag, e.g. {@code <#5ad7ff>}. */
+    public String tag() { return "<" + color.asHexString() + ">"; }
+    public Color bukkitColor() { return Color.fromRGB(color.value()); }
+    public Component text(String s) { return Component.text(s, color); }
+
+    /** The constellation this one beats, or null for a Mythical. */
+    public Constellation prey() {
+        if (mythic) return null;
+        return RING.get((RING.indexOf(this) + 1) % RING.size());
+    }
+
+    /** The constellation that beats this one, or null for a Mythical. */
+    public Constellation predator() {
+        if (mythic) return null;
+        return RING.get((RING.indexOf(this) + RING.size() - 1) % RING.size());
+    }
+
+    public static List<Constellation> ring() { return RING; }
+
+    public static List<Constellation> mythics() {
+        return Arrays.stream(values()).filter(c -> c.mythic).toList();
+    }
+
+    public static Constellation parse(String s) {
+        if (s == null) return null;
+        for (Constellation c : values()) if (c.name().equalsIgnoreCase(s) || c.display.equalsIgnoreCase(s)) return c;
+        return null;
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/CooldownManager.java =====
+package com.astralis.core;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public final class CooldownManager {
+    private final Map<UUID, Map<String, Long>> map = new HashMap<>();
+
+    public boolean ready(UUID id, String key) { return remaining(id, key) <= 0; }
+
+    /** Remaining cooldown in seconds. */
+    public double remaining(UUID id, String key) {
+        Map<String, Long> m = map.get(id);
+        if (m == null) return 0;
+        Long until = m.get(key);
+        if (until == null) return 0;
+        return Math.max(0, (until - System.currentTimeMillis()) / 1000.0);
+    }
+
+    public void set(UUID id, String key, double seconds) {
+        map.computeIfAbsent(id, k -> new HashMap<>()).put(key, System.currentTimeMillis() + (long) (seconds * 1000));
+    }
+
+    public void clear(UUID id) { map.remove(id); }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/Damage.java =====
+package com.astralis.core;
+
+import com.astralis.Astralis;
+import org.bukkit.GameMode;
+import org.bukkit.entity.*;
+
+/** All ability damage flows through here so the counter ring and marks apply uniformly. */
+public final class Damage {
+    private static boolean abilityDamage;
+
+    private Damage() { }
+
+    /** True while an ability is dealing damage (listeners use this to avoid recursion). */
+    public static boolean isAbility() { return abilityDamage; }
+
+    public static boolean valid(Player caster, Entity e) {
+        if (e == caster || !(e instanceof LivingEntity le)) return false;
+        if (le.isDead() || !le.isValid() || le instanceof ArmorStand) return false;
+        if (le instanceof Tameable t && t.isTamed()) return false;
+        if (le instanceof Player other) {
+            if (other.getGameMode() == GameMode.SPECTATOR) return false;
+            if (Astralis.get().trust().trusts(caster.getUniqueId(), other.getUniqueId())) return false;
+        }
+        return true;
+    }
+
+    /** Counter-ring multiplier x Orion mark multiplier. */
+    public static double modifier(Player attacker, LivingEntity victim) {
+        Astralis pl = Astralis.get();
+        double m = pl.sigils().counterMultiplier(attacker, victim);
+        StatusManager st = pl.statuses();
+        if (st.has(victim.getUniqueId(), StatusManager.Status.MARKED)
+                && attacker.getUniqueId().equals(st.source(victim.getUniqueId(), StatusManager.Status.MARKED))) {
+            m *= 1 + pl.val("orion.beam.mark-bonus", 0.10);
+        }
+        return m;
+    }
+
+    public static boolean deal(Player caster, LivingEntity target, double amount) {
+        if (amount <= 0 || !valid(caster, target)) return false;
+        double dmg = amount * modifier(caster, target) * Astralis.get().getConfig().getDouble("general.ability-damage-scale", 1.0);
+        boolean prev = abilityDamage;
+        abilityDamage = true;
+        try {
+            target.setNoDamageTicks(0);
+            target.damage(dmg, caster);
+        } finally {
+            abilityDamage = prev;
+        }
+        return true;
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/Sigil.java =====
+package com.astralis.core;
+
+import java.util.UUID;
+
+/** Parsed view of a sigil item. */
+public record Sigil(Constellation constellation, Tier tier, UUID owner, UUID id) { }
+
+
+===== FILE: src/main/java/com/astralis/core/SigilManager.java =====
+package com.astralis.core;
+
+import com.astralis.Astralis;
+import com.astralis.Keys;
+import com.astralis.fx.Awakening;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+
+/** Creates, identifies and reasons about sigil items. */
+public final class SigilManager {
+    private final Astralis plugin;
+    private final Set<Material> materials = EnumSet.noneOf(Material.class);
+    private final Set<UUID> tracked = new HashSet<>();
+
+    public SigilManager(Astralis plugin) {
+        this.plugin = plugin;
+        for (Constellation c : Constellation.values()) materials.add(c.material());
+    }
+
+    private Keys keys() { return plugin.keys(); }
+
+    // ------------------------------------------------------------------ items
+
+    public ItemStack create(Constellation c, Tier tier, UUID owner, String ownerName) {
+        return build(c, tier, owner, ownerName, UUID.randomUUID());
+    }
+
+    private ItemStack build(Constellation c, Tier tier, UUID owner, String ownerName, UUID id) {
+        ItemStack item = new ItemStack(c.material());
+        ItemMeta meta = item.getItemMeta();
+        String stars = tier == Tier.RADIANT ? "✦✦ " : "✦ ";
+        meta.displayName(noItalic(Astralis.mm(c.tag() + "<bold>" + stars + c.display() + " Sigil")));
+        meta.lore(lore(c, tier, ownerName));
+        meta.setEnchantmentGlintOverride(true);
+        meta.setMaxStackSize(1);
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        pdc.set(keys().constellation, PersistentDataType.STRING, c.name());
+        pdc.set(keys().tier, PersistentDataType.INTEGER, tier.level());
+        pdc.set(keys().id, PersistentDataType.STRING, id.toString());
+        if (owner != null) pdc.set(keys().owner, PersistentDataType.STRING, owner.toString());
+        if (ownerName != null) pdc.set(keys().ownerName, PersistentDataType.STRING, ownerName);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private List<Component> lore(Constellation c, Tier tier, String ownerName) {
+        String t = c.tag();
+        List<Component> l = new ArrayList<>();
+        l.add(line(t + c.title() + " <dark_gray>• " + t + tier.label() + " Tier"));
+        l.add(line(""));
+        l.add(line(t + "◈ Passive — <white>" + c.passiveName()));
+        wrap(c.passiveDesc()).forEach(s -> l.add(line("<gray>" + s)));
+        l.add(line(""));
+        l.add(line(t + "◈ Right-click — <white>" + c.primaryName()));
+        wrap(c.primaryDesc()).forEach(s -> l.add(line("<gray>" + s)));
+        l.add(line(""));
+        l.add(line(t + "◈ Sneak + Right-click — <white>" + c.ultName() + " <dark_gray>(" + plugin.ultCost(tier) + " Stardust)"));
+        wrap(c.ultDesc()).forEach(s -> l.add(line("<gray>" + s)));
+        l.add(line(""));
+        if (c.mythic()) l.add(line("<gold><bold>MYTHICAL <reset><gray>Outside the counter ring: no bonus, no penalty."));
+        else l.add(line("<green>Beats <white>" + c.prey().display() + "<dark_gray> | <red>Weak to <white>" + c.predator().display()));
+        if (tier == Tier.RADIANT) l.add(line("<yellow>Radiant: stronger, faster cooldowns, cheaper Zenith."));
+        l.add(line("<dark_gray>Attuned to " + (ownerName == null ? "no one" : Astralis.MM.escapeTags(ownerName))));
+        return l;
+    }
+
+    private static Component line(String mini) { return noItalic(Astralis.mm(mini)); }
+
+    private static Component noItalic(Component c) { return c.decoration(TextDecoration.ITALIC, false); }
+
+    private static List<String> wrap(String s) {
+        List<String> out = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        for (String w : s.split(" ")) {
+            if (cur.length() + w.length() > 40) { out.add(cur.toString()); cur.setLength(0); }
+            if (cur.length() > 0) cur.append(' ');
+            cur.append(w);
+        }
+        if (cur.length() > 0) out.add(cur.toString());
+        return out;
+    }
+
+    public ItemStack createCore() {
+        ItemStack item = new ItemStack(Material.HEART_OF_THE_SEA);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(noItalic(Astralis.mm("<gradient:#5ad7ff:#b57bff><bold>✦ Stellar Core")));
+        meta.lore(List.of(
+                line("<gray>A fragment of a dying star."),
+                line(""),
+                line("<white>Hold in your main hand with a Dim"),
+                line("<white>sigil in your off-hand, then right-click"),
+                line("<white>to ascend it to <yellow>Radiant<white>.")));
+        meta.setEnchantmentGlintOverride(true);
+        meta.getPersistentDataContainer().set(keys().core, PersistentDataType.BYTE, (byte) 1);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public ItemStack upgrade(ItemStack old) { return withTier(old, Tier.RADIANT); }
+
+    /** Rebuilds a sigil at another tier, keeping its owner and unique id. */
+    public ItemStack withTier(ItemStack old, Tier tier) {
+        Sigil s = read(old);
+        String ownerName = old.getItemMeta().getPersistentDataContainer().get(keys().ownerName, PersistentDataType.STRING);
+        return build(s.constellation(), tier, s.owner(), ownerName, s.id() == null ? UUID.randomUUID() : s.id());
+    }
+
+    public String ownerName(ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta()) return null;
+        return stack.getItemMeta().getPersistentDataContainer().get(keys().ownerName, PersistentDataType.STRING);
+    }
+
+    // ---------------------------------------------------------------- reading
+
+    public boolean isSigil(ItemStack stack) { return read(stack) != null; }
+
+    public boolean isCore(ItemStack stack) {
+        return stack != null && stack.getType() == Material.HEART_OF_THE_SEA && stack.hasItemMeta()
+                && stack.getItemMeta().getPersistentDataContainer().has(keys().core, PersistentDataType.BYTE);
+    }
+
+    public Sigil read(ItemStack stack) {
+        if (stack == null || !materials.contains(stack.getType()) || !stack.hasItemMeta()) return null;
+        PersistentDataContainer pdc = stack.getItemMeta().getPersistentDataContainer();
+        Constellation c = Constellation.parse(pdc.get(keys().constellation, PersistentDataType.STRING));
+        if (c == null) return null;
+        Integer tier = pdc.get(keys().tier, PersistentDataType.INTEGER);
+        return new Sigil(c, Tier.of(tier == null ? 1 : tier),
+                uuid(pdc.get(keys().owner, PersistentDataType.STRING)),
+                uuid(pdc.get(keys().id, PersistentDataType.STRING)));
+    }
+
+    private static UUID uuid(String s) {
+        if (s == null) return null;
+        try { return UUID.fromString(s); } catch (IllegalArgumentException e) { return null; }
+    }
+
+    /** The sigil whose passive is active: highest tier, then lowest inventory slot. */
+    public Sigil active(Player p) {
+        Sigil best = null;
+        for (ItemStack it : p.getInventory().getContents()) {
+            Sigil s = read(it);
+            if (s != null && (best == null || s.tier().level() > best.tier().level())) best = s;
+        }
+        return best;
+    }
+
+    public int carried(Player p) {
+        int n = 0;
+        for (ItemStack it : p.getInventory().getContents()) if (isSigil(it)) n++;
+        return n;
+    }
+
+    /** Tier potency, reduced when the sigil is not yours (stolen sigils are unattuned). */
+    public double potency(Player p, Sigil s) {
+        double base = plugin.tierPotency(s.tier());
+        boolean attuned = s.owner() == null || s.owner().equals(p.getUniqueId());
+        return attuned ? base : base * plugin.getConfig().getDouble("general.unattuned-potency", 0.75);
+    }
+
+    /** Counter-ring multiplier for attacker vs victim (1.0 if either has no sigil). */
+    public double counterMultiplier(Player attacker, LivingEntity victim) {
+        if (!(victim instanceof Player vp)) return 1.0;
+        Sigil a = active(attacker);
+        Sigil v = active(vp);
+        if (a == null || v == null) return 1.0;
+        if (a.constellation().prey() == v.constellation())
+            return 1 + plugin.getConfig().getDouble("counter-ring.bonus", 0.15);
+        if (a.constellation().predator() == v.constellation())
+            return 1 - plugin.getConfig().getDouble("counter-ring.penalty", 0.15);
+        return 1.0;
+    }
+
+    // ----------------------------------------------------------------- giving
+
+    public void giveOrDrop(Player p, ItemStack item) {
+        Map<Integer, ItemStack> left = p.getInventory().addItem(item);
+        for (ItemStack it : left.values()) {
+            Item drop = p.getWorld().dropItem(p.getLocation(), it);
+            if (isSigil(it)) protectDrop(drop);
+        }
+    }
+
+    /** Makes a dropped sigil indestructible, glowing, and visible from afar. */
+    public void protectDrop(Item item) {
+        Sigil s = read(item.getItemStack());
+        if (s == null) return;
+        item.setInvulnerable(true);
+        item.setUnlimitedLifetime(true);
+        item.setGlowing(true);
+        item.customName(Astralis.mm(s.constellation().tag() + "✦ " + s.constellation().display() + " Sigil"));
+        item.setCustomNameVisible(true);
+        tracked.add(item.getUniqueId());
+    }
+
+    public Set<UUID> tracked() { return tracked; }
+
+    /** Favours constellations that fewer online players are using. */
+    public Constellation pickBalanced() {
+        Map<Constellation, Integer> counts = new EnumMap<>(Constellation.class);
+        for (Constellation c : Constellation.ring()) if (plugin.enabled(c)) counts.put(c, 0);
+        if (counts.isEmpty()) return Constellation.ORION;
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            Sigil s = active(p);
+            if (s != null && counts.containsKey(s.constellation())) counts.merge(s.constellation(), 1, Integer::sum);
+        }
+        int min = Collections.min(counts.values());
+        List<Constellation> pool = new ArrayList<>();
+        for (Map.Entry<Constellation, Integer> en : counts.entrySet()) if (en.getValue() == min) pool.add(en.getKey());
+        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+    }
+
+    /** Plays the cinematic Awakening and hands the player their first sigil. */
+    public void awaken(Player p, Constellation c) {
+        p.getPersistentDataContainer().set(keys().received, PersistentDataType.BYTE, (byte) 1);
+        Awakening.play(plugin, p, c, () -> giveOrDrop(p, create(c, Tier.DIM, p.getUniqueId(), p.getName())));
+    }
+
+    // ---------------------------------------------------------------- recipes
+
+    public void registerRecipes() {
+        if (!plugin.getConfig().getBoolean("general.core-recipe", true)) return;
+        ShapedRecipe r = new ShapedRecipe(keys().recipeCore, createCore());
+        r.shape("DAD", "ANA", "DAD");
+        r.setIngredient('D', Material.DIAMOND);
+        r.setIngredient('A', Material.AMETHYST_SHARD);
+        r.setIngredient('N', Material.NETHER_STAR);
+        Bukkit.addRecipe(r);
+    }
+
+    public void unregisterRecipes() {
+        NamespacedKey k = keys().recipeCore;
+        Bukkit.removeRecipe(k);
+    }
+
+    public void discover(Player p) {
+        if (plugin.getConfig().getBoolean("general.core-recipe", true)) p.discoverRecipe(keys().recipeCore);
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/StardustManager.java =====
+package com.astralis.core;
+
+import com.astralis.Astralis;
+import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+/** Stardust: the energy that fuels each constellation's Zenith. Earned by fighting. */
+public final class StardustManager {
+    private final Astralis plugin;
+    private final Map<UUID, Double> energy = new HashMap<>();
+
+    public StardustManager(Astralis plugin) { this.plugin = plugin; }
+
+    public double max() { return plugin.getConfig().getDouble("stardust.max", 100); }
+
+    public double get(Player p) { return energy.getOrDefault(p.getUniqueId(), 0.0); }
+
+    public void set(Player p, double v) { energy.put(p.getUniqueId(), Math.max(0, Math.min(max(), v))); }
+
+    /** Positive gains are scaled by any running event multiplier (Eclipse). */
+    public void add(Player p, double v) {
+        if (v > 0 && plugin.events() != null) v *= plugin.events().stardustMultiplier();
+        set(p, get(p) + v);
+    }
+
+    public void load(Player p) {
+        Double d = p.getPersistentDataContainer().get(plugin.keys().stardust, PersistentDataType.DOUBLE);
+        energy.put(p.getUniqueId(), d == null ? 0.0 : d);
+    }
+
+    public void save(Player p) {
+        p.getPersistentDataContainer().set(plugin.keys().stardust, PersistentDataType.DOUBLE, get(p));
+        energy.remove(p.getUniqueId());
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/StatusManager.java =====
+package com.astralis.core;
+
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+
+/** Lightweight timed statuses that abilities attach to entities. */
+public final class StatusManager {
+    public enum Status { MARKED, ECHO, AEGIS, NO_FALL }
+
+    private record Entry(long expires, UUID source) { }
+
+    private final Map<UUID, EnumMap<Status, Entry>> map = new HashMap<>();
+
+    public void apply(UUID id, Status s, int ticks, UUID source) {
+        map.computeIfAbsent(id, k -> new EnumMap<>(Status.class))
+                .put(s, new Entry(System.currentTimeMillis() + ticks * 50L, source));
+    }
+
+    public boolean has(UUID id, Status s) {
+        EnumMap<Status, Entry> m = map.get(id);
+        if (m == null) return false;
+        Entry e = m.get(s);
+        if (e == null) return false;
+        if (e.expires() < System.currentTimeMillis()) {
+            m.remove(s);
+            return false;
+        }
+        return true;
+    }
+
+    public UUID source(UUID id, Status s) {
+        if (!has(id, s)) return null;
+        return map.get(id).get(s).source();
+    }
+
+    public void clear(UUID id, Status s) {
+        EnumMap<Status, Entry> m = map.get(id);
+        if (m != null) m.remove(s);
+    }
+
+    public void clearAll(UUID id) { map.remove(id); }
+
+    public void purge() {
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<UUID, EnumMap<Status, Entry>>> it = map.entrySet().iterator();
+        while (it.hasNext()) {
+            EnumMap<Status, Entry> m = it.next().getValue();
+            m.values().removeIf(e -> e.expires() < now);
+            if (m.isEmpty()) it.remove();
+        }
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/Targeting.java =====
+package com.astralis.core;
+
+import org.bukkit.FluidCollisionMode;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.util.BoundingBox;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+public final class Targeting {
+    private Targeting() { }
+
+    public record Pierce(List<LivingEntity> entities, Location end) { }
+
+    /** Ray that stops at solid blocks but passes through every entity it touches. */
+    public static Pierce pierce(Player p, double range, double inflate) {
+        Location eye = p.getEyeLocation();
+        World w = eye.getWorld();
+        Vector dir = eye.getDirection().normalize();
+        RayTraceResult br = w.rayTraceBlocks(eye, dir, range, FluidCollisionMode.NEVER, true);
+        double max = br != null ? br.getHitPosition().distance(eye.toVector()) : range;
+        Location end = eye.clone().add(dir.clone().multiply(max));
+        Location mid = eye.clone().add(dir.clone().multiply(max / 2));
+        double half = max / 2 + 2;
+
+        List<LivingEntity> out = new ArrayList<>();
+        for (Entity e : w.getNearbyEntities(mid, half, half, half)) {
+            if (!Damage.valid(p, e)) continue;
+            LivingEntity le = (LivingEntity) e;
+            BoundingBox box = le.getBoundingBox().expand(inflate);
+            if (box.rayTrace(eye.toVector(), dir, max) != null) out.add(le);
+        }
+        out.sort(Comparator.comparingDouble(le -> le.getLocation().distanceSquared(eye)));
+        return new Pierce(out, end);
+    }
+
+    /** Where the player is aiming (entity or block), or null if aiming at the sky. */
+    public static Location aim(Player p, double range) {
+        Location eye = p.getEyeLocation();
+        RayTraceResult r = p.getWorld().rayTrace(eye, eye.getDirection(), range, FluidCollisionMode.NEVER, true, 0.4,
+                e -> Damage.valid(p, e));
+        if (r == null) return null;
+        if (r.getHitEntity() != null) return r.getHitEntity().getLocation();
+        Vector v = r.getHitPosition();
+        return new Location(p.getWorld(), v.getX(), v.getY(), v.getZ());
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/Tier.java =====
+package com.astralis.core;
+
+public enum Tier {
+    DIM(1, "Dim"),
+    RADIANT(2, "Radiant");
+
+    private final int level;
+    private final String label;
+
+    Tier(int level, String label) {
+        this.level = level;
+        this.label = label;
+    }
+
+    public int level() { return level; }
+    public String label() { return label; }
+
+    public static Tier of(int level) { return level >= 2 ? RADIANT : DIM; }
+
+    public static Tier parse(String s) {
+        if (s == null) return null;
+        for (Tier t : values()) if (t.name().equalsIgnoreCase(s) || t.label.equalsIgnoreCase(s)) return t;
+        return null;
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/core/TrustManager.java =====
+package com.astralis.core;
+
+import com.astralis.Astralis;
+import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.*;
+
+/** One-way trust list: your abilities never hurt players you trust. */
+public final class TrustManager {
+    private final Astralis plugin;
+    private final Map<UUID, Set<UUID>> map = new HashMap<>();
+
+    public TrustManager(Astralis plugin) { this.plugin = plugin; }
+
+    public void load(Player p) {
+        Set<UUID> set = new LinkedHashSet<>();
+        String raw = p.getPersistentDataContainer().get(plugin.keys().trusted, PersistentDataType.STRING);
+        if (raw != null && !raw.isBlank()) {
+            for (String s : raw.split(",")) {
+                try { set.add(UUID.fromString(s.trim())); } catch (IllegalArgumentException ignored) { }
+            }
+        }
+        map.put(p.getUniqueId(), set);
+    }
+
+    public void save(Player p) {
+        Set<UUID> set = map.remove(p.getUniqueId());
+        if (set == null) return;
+        StringBuilder sb = new StringBuilder();
+        for (UUID u : set) { if (sb.length() > 0) sb.append(','); sb.append(u); }
+        p.getPersistentDataContainer().set(plugin.keys().trusted, PersistentDataType.STRING, sb.toString());
+    }
+
+    public boolean trusts(UUID owner, UUID other) {
+        Set<UUID> s = map.get(owner);
+        return s != null && s.contains(other);
+    }
+
+    public boolean add(Player owner, UUID other) {
+        return map.computeIfAbsent(owner.getUniqueId(), k -> new LinkedHashSet<>()).add(other);
+    }
+
+    public boolean remove(Player owner, UUID other) {
+        Set<UUID> s = map.get(owner.getUniqueId());
+        return s != null && s.remove(other);
+    }
+
+    public Set<UUID> list(UUID owner) { return map.getOrDefault(owner, Collections.emptySet()); }
+}
+
+
+===== FILE: src/main/java/com/astralis/event/EventManager.java =====
+package com.astralis.event;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Tier;
+import com.astralis.fx.Fx;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
+import org.bukkit.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+
+/**
+ * Server-wide events:
+ *  - STARFALL: stars crash near players and drop Stardust Shards.
+ *  - CONVERGENCE: king-of-the-hill. Hold the zone alone to claim a Mythical sigil.
+ *  - ECLIPSE: Stardust gain is multiplied for everyone.
+ */
+public final class EventManager {
+    public enum Type {
+        STARFALL("Starfall", 8, BossBar.Color.YELLOW, "Stars crash near players. Collect Stardust Shards."),
+        CONVERGENCE("Celestial Convergence", 20, BossBar.Color.PURPLE, "Hold the zone alone to claim a Mythical sigil."),
+        ECLIPSE("Eclipse", 10, BossBar.Color.RED, "Stardust gain is multiplied for everyone.");
+
+        private final String label, blurb;
+        private final int defaultMinutes;
+        private final BossBar.Color color;
+
+        Type(String label, int defaultMinutes, BossBar.Color color, String blurb) {
+            this.label = label;
+            this.defaultMinutes = defaultMinutes;
+            this.color = color;
+            this.blurb = blurb;
+        }
+
+        public String label() { return label; }
+        public String blurb() { return blurb; }
+        public int defaultMinutes() { return defaultMinutes; }
+
+        public static Type parse(String s) {
+            if (s == null) return null;
+            for (Type t : values()) if (t.name().equalsIgnoreCase(s) || t.label.equalsIgnoreCase(s)) return t;
+            return null;
+        }
+    }
+
+    private static final String[] COMPASS = {"East", "South-East", "South", "South-West", "West", "North-West", "North", "North-East"};
+
+    private final Astralis plugin;
+    private Type active;
+    private BossBar bar;
+    private BukkitTask task;
+    private int elapsed, total;
+    private double multiplier = 1.0;
+    private long nextAuto = 0;
+
+    private final Set<UUID> shards = new HashSet<>();
+    private Location zone;
+    private final Map<UUID, Integer> progress = new HashMap<>();
+
+    public EventManager(Astralis plugin) { this.plugin = plugin; }
+
+    // ------------------------------------------------------------------ queries
+    public boolean running() { return active != null; }
+    public Type active() { return active; }
+    public double stardustMultiplier() { return multiplier; }
+    public Location zone() { return zone; }
+
+    private double cfgD(Type t, String key, double def) {
+        return plugin.getConfig().getDouble("events." + t.name().toLowerCase() + "." + key, def);
+    }
+
+    private int cfgI(Type t, String key, int def) {
+        return plugin.getConfig().getInt("events." + t.name().toLowerCase() + "." + key, def);
+    }
+
+    private List<Player> eligible() {
+        List<Player> out = new ArrayList<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.isDead() || p.getGameMode() == GameMode.SPECTATOR || plugin.disabledWorld(p.getWorld())) continue;
+            out.add(p);
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------ lifecycle
+    public boolean start(Type type, int minutes) {
+        if (active != null) return false;
+        if (minutes <= 0) minutes = cfgI(type, "minutes", type.defaultMinutes);
+        active = type;
+        elapsed = 0;
+        total = minutes * 1200;
+        multiplier = 1.0;
+        progress.clear();
+        shards.clear();
+
+        bar = BossBar.bossBar(Component.text(type.label, NamedTextColor.WHITE), 1f, type.color, BossBar.Overlay.PROGRESS);
+        for (Player p : Bukkit.getOnlinePlayers()) p.showBossBar(bar);
+
+        switch (type) {
+            case STARFALL -> announce("<gold>✦ <bold>STARFALL</bold> <gray>The sky is burning. Stars are crashing near players — grab the <yellow>Stardust Shards<gray>!");
+            case ECLIPSE -> {
+                multiplier = cfgD(Type.ECLIPSE, "multiplier", 2.0);
+                if (plugin.getConfig().getBoolean("events.eclipse.set-night", false)) {
+                    World w = eventWorld();
+                    if (w != null) w.setTime(18000);
+                }
+                announce("<dark_red>☾ <bold>ECLIPSE</bold> <gray>The sun is swallowed. <white>Stardust gain x" + multiplier + "<gray> for everyone!");
+            }
+            case CONVERGENCE -> {
+                if (!pickZone()) {
+                    stop(null);
+                    return false;
+                }
+                announce("<light_purple>✦ <bold>CELESTIAL CONVERGENCE</bold> <gray>A Mythical sigil awaits at <white>"
+                        + zone.getBlockX() + ", " + zone.getBlockZ() + "<gray>. Hold the zone alone to claim it. <dark_gray>(/astralis event locate)");
+            }
+        }
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.showTitle(Title.title(Component.text("✦ " + type.label.toUpperCase() + " ✦", NamedTextColor.GOLD),
+                    Component.text(type.blurb, NamedTextColor.GRAY),
+                    Title.Times.times(Duration.ofMillis(300), Duration.ofMillis(3000), Duration.ofMillis(700))));
+            p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.6f, 1.6f);
+        }
+        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 10L, 10L);
+        return true;
+    }
+
+    public void stop(String reason) {
+        if (active == null) return;
+        active = null;
+        if (task != null) task.cancel();
+        task = null;
+        if (bar != null) for (Player p : Bukkit.getOnlinePlayers()) p.hideBossBar(bar);
+        bar = null;
+        multiplier = 1.0;
+        for (UUID id : shards) {
+            Entity e = Bukkit.getEntity(id);
+            if (e != null) e.remove();
+        }
+        shards.clear();
+        progress.clear();
+        zone = null;
+        if (reason != null) Bukkit.broadcast(Astralis.mm("<gold>✦ <gray>" + reason));
+    }
+
+    public void onJoin(Player p) { if (bar != null) p.showBossBar(bar); }
+
+    /** Optional auto-scheduler, checked once a minute. */
+    public void startScheduler() {
+        Bukkit.getScheduler().runTaskTimer(plugin, this::autoTick, 1200L, 1200L);
+    }
+
+    private void autoTick() {
+        var cfg = plugin.getConfig();
+        if (!cfg.getBoolean("events.auto.enabled", false) || active != null) return;
+        if (Bukkit.getOnlinePlayers().size() < cfg.getInt("events.auto.min-players", 2)) return;
+        long now = System.currentTimeMillis();
+        long gap = cfg.getInt("events.auto.interval-minutes", 90) * 60000L;
+        if (nextAuto == 0) { nextAuto = now + gap; return; }
+        if (now < nextAuto) return;
+        Type[] ts = Type.values();
+        start(ts[ThreadLocalRandom.current().nextInt(ts.length)], 0);
+        nextAuto = now + gap;
+    }
+
+    // ------------------------------------------------------------------ main loop (every 10 ticks)
+    private void tick() {
+        if (active == null) return;
+        elapsed += 10;
+        if (active != Type.CONVERGENCE) {
+            bar.progress((float) Math.max(0, 1 - elapsed / (double) total));
+            int left = Math.max(0, (total - elapsed) / 20);
+            bar.name(Astralis.mm("<white><bold>" + active.label + "</bold> <dark_gray>— <gray>" + String.format("%d:%02d", left / 60, left % 60) + " left"));
+        }
+        switch (active) {
+            case STARFALL -> tickStarfall();
+            case CONVERGENCE -> tickConvergence();
+            case ECLIPSE -> tickEclipse();
+        }
+        if (active != null && elapsed >= total) {
+            Type t = active;
+            stop(t == Type.CONVERGENCE ? "The Convergence fades. No one claimed the Mythical." : t.label + " has ended.");
+        }
+    }
+
+    private World eventWorld() {
+        String name = plugin.getConfig().getString("events.world", "");
+        World w = name == null || name.isBlank() ? null : Bukkit.getWorld(name);
+        if (w == null && !Bukkit.getWorlds().isEmpty()) w = Bukkit.getWorlds().get(0);
+        return w;
+    }
+
+    private void announce(String mini) { Bukkit.broadcast(Astralis.mm(mini)); }
+
+    // ------------------------------------------------------------------ STARFALL
+    public ItemStack createShard() {
+        ItemStack it = new ItemStack(Material.PRISMARINE_SHARD);
+        ItemMeta m = it.getItemMeta();
+        m.displayName(Astralis.mm("<!italic><gold>✦ Stardust Shard"));
+        m.setEnchantmentGlintOverride(true);
+        m.getPersistentDataContainer().set(plugin.keys().shard, PersistentDataType.BYTE, (byte) 1);
+        it.setItemMeta(m);
+        return it;
+    }
+
+    public boolean isShard(ItemStack s) {
+        return s != null && s.getType() == Material.PRISMARINE_SHARD && s.hasItemMeta()
+                && s.getItemMeta().getPersistentDataContainer().has(plugin.keys().shard, PersistentDataType.BYTE);
+    }
+
+    public void collect(Player p, Item entity) {
+        shards.remove(entity.getUniqueId());
+        entity.remove();
+        double amt = cfgD(Type.STARFALL, "shard-stardust", 20);
+        plugin.stardust().add(p, amt);
+        Location l = p.getLocation().add(0, 1, 0);
+        p.getWorld().spawnParticle(Particle.END_ROD, l, 25, 0.4, 0.6, 0.4, 0.15);
+        p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 1.6f);
+        p.sendActionBar(Astralis.mm("<gold>✦ +" + (int) amt + " Stardust"));
+    }
+
+    private void tickStarfall() {
+        // shard beacons
+        Iterator<UUID> it = shards.iterator();
+        while (it.hasNext()) {
+            Entity e = Bukkit.getEntity(it.next());
+            if (!(e instanceof Item item) || !item.isValid()) { it.remove(); continue; }
+            Location l = item.getLocation();
+            for (double y = 0.3; y < 4; y += 0.6) l.getWorld().spawnParticle(Particle.END_ROD, l.clone().add(0, y, 0), 1, 0.02, 0, 0.02, 0);
+        }
+        int interval = Math.max(1, cfgI(Type.STARFALL, "interval-seconds", 5)) * 20;
+        if (elapsed % interval != 0) return;
+        List<Player> pool = eligible();
+        Collections.shuffle(pool);
+        int n = Math.min(pool.size(), cfgI(Type.STARFALL, "stars-per-wave", 3));
+        for (int i = 0; i < n; i++) spawnStar(pool.get(i));
+    }
+
+    private void spawnStar(Player near) {
+        World w = near.getWorld();
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        double ang = r.nextDouble(Math.PI * 2), dist = r.nextDouble(14, 40);
+        int px = near.getLocation().getBlockX(), pz = near.getLocation().getBlockZ();
+        int x = px + (int) (Math.cos(ang) * dist), z = pz + (int) (Math.sin(ang) * dist);
+        int y = w.getHighestBlockYAt(x, z);
+        final Location land = new Location(w, x + 0.5, y + 1, z + 0.5);
+        if (land.clone().subtract(0, 1, 0).getBlock().isLiquid()) return;
+
+        near.sendActionBar(Astralis.mm("<gold>✦ <gray>A star falls to the <white>" + compass(x - px, z - pz) + "<gray>..."));
+        Fx.sound(land, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 4f, 0.6f);
+
+        final Location start = land.clone().add(0, 45, 0);
+        final Particle.DustOptions gold = Fx.dust(Color.fromRGB(0xffd86b), 1.6f);
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (active != Type.STARFALL) { cancel(); return; }   // event ended mid-flight: no orphan shard
+                if (t >= 30) { impact(land); cancel(); return; }
+                double f = t / 30.0;
+                Location head = start.clone().add(0, -45 * f, 0);
+                for (int k = 0; k < 5; k++) {
+                    Location tr = head.clone().add(0, k * 0.8, 0);
+                    w.spawnParticle(Particle.END_ROD, tr, 1, 0.1, 0.1, 0.1, 0.01);
+                    w.spawnParticle(Particle.DUST, tr, 1, 0.15, 0.15, 0.15, 0, gold);
+                }
+                w.spawnParticle(Particle.FLAME, head, 3, 0.2, 0.2, 0.2, 0.02);
+                t++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private void impact(Location land) {
+        World w = land.getWorld();
+        Fx.sound(land, Sound.ENTITY_GENERIC_EXPLODE, 3f, 0.8f);
+        w.spawnParticle(Particle.EXPLOSION_EMITTER, land, 1);
+        w.spawnParticle(Particle.END_ROD, land, 50, 1.2, 0.4, 1.2, 0.25);
+        Fx.ring(land.clone().add(0, 0.2, 0), 3, 30, Particle.DUST, Fx.dust(Color.fromRGB(0xffd86b), 1.5f));
+
+        Item item = w.dropItem(land.clone().add(0, 0.3, 0), createShard());
+        item.setGlowing(true);
+        item.setInvulnerable(true);
+        item.setVelocity(new Vector(0, 0.25, 0));
+        item.customName(Astralis.mm("<gold>✦ Stardust Shard"));
+        item.setCustomNameVisible(true);
+        shards.add(item.getUniqueId());
+    }
+
+    // ------------------------------------------------------------------ CONVERGENCE
+    private boolean pickZone() {
+        World w = eventWorld();
+        if (w == null) return false;
+        Location sp = w.getSpawnLocation();
+        double min = cfgD(Type.CONVERGENCE, "min-distance", 150), max = Math.max(min + 1, cfgD(Type.CONVERGENCE, "max-distance", 600));
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        Location best = null;
+        for (int i = 0; i < 12; i++) {
+            double ang = r.nextDouble(Math.PI * 2), d = r.nextDouble(min, max);
+            int x = sp.getBlockX() + (int) (Math.cos(ang) * d), z = sp.getBlockZ() + (int) (Math.sin(ang) * d);
+            int y = w.getHighestBlockYAt(x, z);
+            Location l = new Location(w, x + 0.5, y + 1, z + 0.5);
+            best = l;
+            if (!l.clone().subtract(0, 1, 0).getBlock().isLiquid() && w.getWorldBorder().isInside(l)) break;
+        }
+        zone = best;
+        return zone != null;
+    }
+
+    private void tickConvergence() {
+        if (zone == null) { stop(null); return; }
+        World w = zone.getWorld();
+        double r = cfgD(Type.CONVERGENCE, "zone-radius", 6);
+        int need = cfgI(Type.CONVERGENCE, "capture-seconds", 90) * 20;
+
+        // visuals
+        Fx.ring(zone.clone().add(0, 0.2, 0), r, 48, Particle.DUST, Fx.dust(Color.fromRGB(0xb57bff), 1.5f));
+        for (double y = 0; y < 30; y += 1.5) w.spawnParticle(Particle.END_ROD, zone.clone().add(0, y, 0), 1, 0.15, 0, 0.15, 0);
+        if (elapsed % 6000 == 0) {
+            announce("<light_purple>✦ <gray>The Convergence burns at <white>" + zone.getBlockX() + ", " + zone.getBlockZ() + "<gray>.");
+        }
+
+        // who is standing in the zone?
+        List<Player> in = new ArrayList<>();
+        for (Player p : eligible()) {
+            if (p.getWorld() != w) continue;
+            double dx = p.getLocation().getX() - zone.getX(), dz = p.getLocation().getZ() - zone.getZ();
+            if (dx * dx + dz * dz <= r * r && Math.abs(p.getLocation().getY() - zone.getY()) <= 10) in.add(p);
+        }
+        UUID holder = null;
+        if (in.size() == 1) {
+            Player c = in.get(0);
+            holder = c.getUniqueId();
+            int v = progress.merge(holder, 10, Integer::sum);
+            if (v >= need) { win(c); return; }
+        }
+        // everyone who is not actively capturing slowly loses progress
+        Iterator<Map.Entry<UUID, Integer>> it = progress.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Integer> en = it.next();
+            if (en.getKey().equals(holder)) continue;
+            en.setValue(Math.max(0, en.getValue() - 2));
+            if (en.getValue() == 0) it.remove();
+        }
+
+        // bossbar
+        UUID leader = null;
+        int best = 0;
+        for (Map.Entry<UUID, Integer> en : progress.entrySet()) if (en.getValue() > best) { best = en.getValue(); leader = en.getKey(); }
+        String where = zone.getBlockX() + ", " + zone.getBlockZ();
+        String title;
+        if (in.size() > 1) title = "<red><bold>CONTESTED</bold> <dark_gray>— <gray>only one player may hold the zone";
+        else if (leader == null) title = "<light_purple><bold>Convergence</bold> <dark_gray>@ <white>" + where + " <dark_gray>— <gray>unclaimed";
+        else {
+            OfflinePlayer op = Bukkit.getOfflinePlayer(leader);
+            String name = op.getName() == null ? "?" : Astralis.MM.escapeTags(op.getName());
+            title = "<light_purple><bold>Convergence</bold> <dark_gray>— <white>" + name + " <gold>" + (int) (100.0 * best / need) + "%";
+        }
+        bar.name(Astralis.mm(title));
+        bar.progress((float) Math.min(1.0, best / (double) need));
+    }
+
+    private void win(Player winner) {
+        List<Constellation> pool = new ArrayList<>();
+        for (Constellation c : Constellation.mythics()) if (plugin.enabled(c)) pool.add(c);
+        if (pool.isEmpty()) { stop("The Convergence fades. (No Mythicals are enabled.)"); return; }
+        Constellation c = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        plugin.sigils().giveOrDrop(winner, plugin.sigils().create(c, Tier.DIM, winner.getUniqueId(), winner.getName()));
+
+        Location l = winner.getLocation().add(0, 1, 0);
+        winner.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, l, 120, 0.6, 1.2, 0.6, 0.6);
+        Fx.sound(winner.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 2f, 1f);
+        stop(null);
+        Bukkit.broadcast(Astralis.mm("<gold>✦ <white>" + Astralis.MM.escapeTags(winner.getName())
+                + " <gray>has claimed the Mythical " + c.tag() + "<bold>" + c.display() + "</bold><gray>, " + c.title() + "!"));
+        for (Player p : Bukkit.getOnlinePlayers()) p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.4f);
+    }
+
+    // ------------------------------------------------------------------ ECLIPSE
+    private void tickEclipse() {
+        if (elapsed % 40 != 0) return;
+        for (Player p : eligible()) {
+            if (plugin.sigils().active(p) == null) continue;
+            p.getWorld().spawnParticle(Particle.END_ROD, p.getLocation().add(0, 1, 0), 8, 0.4, 0.8, 0.4, 0.06);
+        }
+    }
+
+    // ------------------------------------------------------------------ info
+    private static String compass(int dx, int dz) {
+        double ang = Math.atan2(dz, dx);
+        int idx = (int) Math.round(ang / (Math.PI / 4));
+        return COMPASS[((idx % 8) + 8) % 8];
+    }
+
+    public String status() {
+        if (active == null) return "<gray>No event is running.";
+        int left = Math.max(0, (total - elapsed) / 20);
+        return "<white>" + active.label + " <gray>— " + String.format("%d:%02d", left / 60, left % 60) + " left. <dark_gray>" + active.blurb;
+    }
+
+    public String locate(Player p) {
+        if (active != Type.CONVERGENCE || zone == null) return "<gray>There is no Convergence to locate right now.";
+        if (p.getWorld() != zone.getWorld()) return "<gray>The Convergence is in another world: <white>" + zone.getWorld().getName();
+        int dx = zone.getBlockX() - p.getLocation().getBlockX(), dz = zone.getBlockZ() - p.getLocation().getBlockZ();
+        int dist = (int) Math.sqrt((double) dx * dx + (double) dz * dz);
+        return "<light_purple>✦ <gray>The Convergence is <white>" + dist + " blocks <gray>to the <white>" + compass(dx, dz)
+                + " <dark_gray>(" + zone.getBlockX() + ", " + zone.getBlockZ() + ")";
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/fx/Awakening.java =====
+package com.astralis.fx;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.title.Title;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+import java.time.Duration;
+
+/** The cinematic: your constellation draws itself across the sky, then streams into you. */
+public final class Awakening {
+    private Awakening() { }
+
+    public static void play(Astralis plugin, Player p, Constellation c, Runnable done) {
+        p.showTitle(Title.title(
+                Component.text("✦ AWAKENING ✦", c.color(), TextDecoration.BOLD),
+                Component.text("The stars have chosen you", NamedTextColor.GRAY),
+                Title.Times.times(Duration.ofMillis(400), Duration.ofMillis(3000), Duration.ofMillis(800))));
+
+        Vector f = p.getEyeLocation().getDirection().setY(0);
+        if (f.lengthSquared() < 0.01) f = new Vector(0, 0, 1);
+        final Vector forward = f.normalize();
+        final Vector right = forward.clone().crossProduct(new Vector(0, 1, 0)).normalize();
+        final Location origin = p.getLocation().add(forward.clone().multiply(8)).add(0, 6, 0);
+        final double[][] st = c.stars();
+        final int[][] lk = c.links();
+        final org.bukkit.Particle.DustOptions dust = Fx.dust(c.bukkitColor(), 1.5f);
+        final int total = st.length * 8 + 50;
+
+        Fx.sound(p.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1f, 0.6f);
+
+        new BukkitRunnable() {
+            int t = 0;
+
+            Location at(int i) {
+                return origin.clone().add(right.clone().multiply(st[i][0])).add(0, st[i][1], 0);
+            }
+
+            @Override
+            public void run() {
+                if (!p.isOnline()) { cancel(); return; }
+                World w = p.getWorld();
+                int revealed = Math.min(st.length, (t + 7) / 8);
+
+                if (t % 8 == 1 && t / 8 < st.length) {
+                    p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 0.7f + 0.12f * (t / 8));
+                }
+                for (int i = 0; i < revealed; i++) {
+                    Location l = at(i);
+                    w.spawnParticle(Particle.END_ROD, l, 2, 0.08, 0.08, 0.08, 0);
+                    w.spawnParticle(Particle.DUST, l, 3, 0.15, 0.15, 0.15, 0, dust);
+                }
+                if (t % 2 == 0) {
+                    for (int[] k : lk) {
+                        if (k[0] < revealed && k[1] < revealed) Fx.line(at(k[0]), at(k[1]), 0.5, Particle.DUST, dust);
+                    }
+                }
+                if (t >= st.length * 8 && t < total) {
+                    Location target = p.getLocation().add(0, 1, 0);
+                    for (int i = 0; i < st.length; i++) {
+                        Location from = at(i);
+                        Vector dir = target.toVector().subtract(from.toVector()).normalize();
+                        w.spawnParticle(Particle.END_ROD, from, 0, dir.getX(), dir.getY(), dir.getZ(), 0.55);
+                    }
+                }
+                if (t >= total) {
+                    Location l = p.getLocation().add(0, 1, 0);
+                    w.spawnParticle(Particle.TOTEM_OF_UNDYING, l, 80, 0.4, 0.8, 0.4, 0.45);
+                    w.spawnParticle(Particle.END_ROD, l, 50, 0.3, 0.6, 0.3, 0.2);
+                    p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+                    p.playSound(p.getLocation(), Sound.ITEM_TOTEM_USE, 0.6f, 1.4f);
+                    p.sendMessage(Astralis.mm("<dark_gray>» <gray>You were awakened beneath " + c.tag() + "<bold>" + c.display()
+                            + "</bold><gray>, " + c.title() + ". Use <white>/astralis info <gray>to learn your power."));
+                    done.run();
+                    cancel();
+                    return;
+                }
+                t++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/fx/Fx.java =====
+package com.astralis.fx;
+
+import org.bukkit.Color;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.util.Vector;
+
+/** Particle & sound helpers shared by every ability. */
+public final class Fx {
+    private Fx() { }
+
+    public static Particle.DustOptions dust(Color c, float size) { return new Particle.DustOptions(c, size); }
+
+    /** Spawns a particle, passing data only when it is non-null. */
+    public static void spawn(World w, Particle p, Location l, int count, double dx, double dy, double dz, double speed, Object data) {
+        if (data == null) w.spawnParticle(p, l, count, dx, dy, dz, speed);
+        else w.spawnParticle(p, l, count, dx, dy, dz, speed, data);
+    }
+
+    public static void ring(Location c, double r, int points, Particle p, Object data) {
+        World w = c.getWorld();
+        for (int i = 0; i < points; i++) {
+            double a = 2 * Math.PI * i / points;
+            spawn(w, p, c.clone().add(Math.cos(a) * r, 0, Math.sin(a) * r), 1, 0, 0, 0, 0, data);
+        }
+    }
+
+    public static void line(Location a, Location b, double step, Particle p, Object data) {
+        World w = a.getWorld();
+        Vector d = b.toVector().subtract(a.toVector());
+        double len = d.length();
+        if (len < 0.01) return;
+        d.normalize().multiply(step);
+        Location cur = a.clone();
+        for (double t = 0; t < len; t += step) {
+            spawn(w, p, cur, 1, 0, 0, 0, 0, data);
+            cur.add(d);
+        }
+    }
+
+    /** Two unit vectors perpendicular to dir (and each other). */
+    public static Vector[] basis(Vector dir) {
+        Vector up = Math.abs(dir.getY()) > 0.95 ? new Vector(1, 0, 0) : new Vector(0, 1, 0);
+        Vector u = dir.clone().crossProduct(up).normalize();
+        Vector v = dir.clone().crossProduct(u).normalize();
+        return new Vector[]{u, v};
+    }
+
+    /** A little ghost figure drawn from dust. */
+    public static void silhouette(Location feet, Color color, float size) {
+        World w = feet.getWorld();
+        Particle.DustOptions d = dust(color, size);
+        double yaw = Math.toRadians(feet.getYaw());
+        double rx = Math.cos(yaw) * 0.38, rz = Math.sin(yaw) * 0.38;
+        for (double y = 0; y <= 1.5; y += 0.25) w.spawnParticle(Particle.DUST, feet.clone().add(0, y, 0), 1, 0.03, 0, 0.03, 0, d);
+        w.spawnParticle(Particle.DUST, feet.clone().add(rx, 1.2, rz), 1, 0, 0, 0, 0, d);
+        w.spawnParticle(Particle.DUST, feet.clone().add(-rx, 1.2, -rz), 1, 0, 0, 0, 0, d);
+        w.spawnParticle(Particle.DUST, feet.clone().add(rx * 0.5, 0.1, rz * 0.5), 1, 0, 0, 0, 0, d);
+        w.spawnParticle(Particle.DUST, feet.clone().add(-rx * 0.5, 0.1, -rz * 0.5), 1, 0, 0, 0, 0, d);
+        w.spawnParticle(Particle.END_ROD, feet.clone().add(0, 1.75, 0), 1, 0.05, 0.05, 0.05, 0);
+    }
+
+    public static void sound(Location l, Sound s, float vol, float pitch) { l.getWorld().playSound(l, s, vol, pitch); }
+}
+
+
+===== FILE: src/main/java/com/astralis/kit/AndromedaKit.java =====
+package com.astralis.kit;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Damage;
+import com.astralis.core.Targeting;
+import com.astralis.fx.Fx;
+import org.bukkit.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+/** Andromeda, The Chained (Mythical): binds enemies and cages the battlefield. */
+public final class AndromedaKit extends Kit {
+    private static final Color SILVER = Color.fromRGB(0xc9d1ff);
+    private static final Color INDIGO = Color.fromRGB(0x9aa5ff);
+
+    private static final PotionEffectType[] DEBUFFS = {
+            PotionEffectType.SLOWNESS, PotionEffectType.WEAKNESS, PotionEffectType.MINING_FATIGUE};
+
+    public AndromedaKit(Astralis plugin) { super(plugin, Constellation.ANDROMEDA); }
+
+    @Override public double primaryBaseCooldown() { return v("chains.cooldown", 16); }
+
+    /** Unbound: any slowing or weakening effect is clipped to 1.5 seconds. */
+    @Override
+    public void passive(Player p, double pot) {
+        for (PotionEffectType type : DEBUFFS) {
+            PotionEffect pe = p.getPotionEffect(type);
+            if (pe != null && pe.getDuration() > 30) {
+                p.removePotionEffect(type);
+                p.addPotionEffect(new PotionEffect(type, 30, pe.getAmplifier(), pe.isAmbient(), pe.hasParticles()));
+            }
+        }
+    }
+
+    @Override
+    public boolean primary(Player p, double pot) {
+        Targeting.Pierce pr = Targeting.pierce(p, v("chains.range", 25), 0.5);
+        if (pr.entities().isEmpty()) { fail(p, "No target in sight."); return false; }
+        final LivingEntity target = pr.entities().get(0);
+        final int rootTicks = (int) (v("chains.root-seconds", 2) * 20);
+
+        Damage.deal(p, target, v("chains.damage", 3) * pot);
+        target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, rootTicks, 6, false, true));
+
+        // Yank the target toward the caster
+        Vector pull = p.getLocation().toVector().subtract(target.getLocation().toVector());
+        double dist = pull.length();
+        if (dist > 2.5) {
+            pull.normalize().multiply(Math.min(1.8, 0.35 + dist * 0.12)).setY(0.25);
+            target.setVelocity(pull);
+        }
+        Fx.sound(p.getLocation(), Sound.BLOCK_CHAIN_PLACE, 1.5f, 0.7f);
+        Fx.sound(target.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.5f, 1.8f);
+
+        final Particle.DustOptions silver = Fx.dust(SILVER, 1.0f);
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || !target.isValid() || target.isDead() || t >= rootTicks) {
+                    if (target.isValid()) Fx.sound(target.getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1f, 1.2f);
+                    cancel();
+                    return;
+                }
+                Location a = p.getLocation().add(0, 1.1, 0);
+                Location b = target.getLocation().add(0, target.getHeight() / 2, 0);
+                Vector dv = b.toVector().subtract(a.toVector());
+                double len = dv.length();
+                if (len > 0.1) {
+                    dv.normalize();
+                    int link = 0;
+                    for (double d = 0; d < len; d += 0.45, link++) {
+                        Location l = a.clone().add(dv.clone().multiply(d));
+                        p.getWorld().spawnParticle(link % 2 == 0 ? Particle.END_ROD : Particle.DUST, l, 1, 0, 0, 0, 0,
+                                link % 2 == 0 ? null : silver);
+                    }
+                }
+                p.getWorld().spawnParticle(Particle.ENCHANTED_HIT, b, 4, 0.3, 0.4, 0.3, 0.2);
+                t += 2;
+            }
+        }.runTaskTimer(plugin, 0L, 2L);
+        return true;
+    }
+
+    @Override
+    public boolean ultimate(Player p, double pot) {
+        Location aim = Targeting.aim(p, 35);
+        final Location center = (aim != null ? aim : p.getLocation()).clone().add(0, 2, 0);
+        final World w = center.getWorld();
+        final double r = v("prison.radius", 6);
+        final int duration = (int) (v("prison.seconds", 7) * 20);
+        final double dmg = v("prison.damage", 1.5) * pot;
+        final Particle.DustOptions indigo = Fx.dust(INDIGO, 1.2f);
+
+        // Whoever is inside when the cage rises is a prisoner
+        final Set<UUID> prisoners = new HashSet<>();
+        for (LivingEntity le : targets(p, center, r)) prisoners.add(le.getUniqueId());
+
+        Fx.sound(center, Sound.BLOCK_BEACON_ACTIVATE, 1.5f, 0.6f);
+        Fx.sound(center, Sound.BLOCK_CHAIN_PLACE, 1.5f, 0.5f);
+
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || t >= duration) {
+                    Fx.sound(center, Sound.BLOCK_GLASS_BREAK, 1.5f, 0.6f);
+                    w.spawnParticle(Particle.END_ROD, center, 80, r * 0.6, r * 0.6, r * 0.6, 0.1);
+                    cancel();
+                    return;
+                }
+                // The cage: a slowly rotating shell of stars (fibonacci sphere)
+                int points = 36;
+                double golden = Math.PI * (3 - Math.sqrt(5));
+                for (int i = 0; i < points; i++) {
+                    double y = 1 - (i / (double) (points - 1)) * 2;
+                    double rad = Math.sqrt(1 - y * y);
+                    double th = golden * i + t * 0.04;
+                    Location l = center.clone().add(Math.cos(th) * rad * r, y * r, Math.sin(th) * rad * r);
+                    w.spawnParticle(i % 3 == 0 ? Particle.END_ROD : Particle.DUST, l, 1, 0, 0, 0, 0, i % 3 == 0 ? null : indigo);
+                }
+
+                // Hold prisoners in, keep everyone else out
+                for (Entity e : w.getNearbyEntities(center, r + 3, r + 3, r + 3)) {
+                    if (!Damage.valid(p, e)) continue;
+                    LivingEntity le = (LivingEntity) e;
+                    Vector toCenter = center.toVector().subtract(le.getLocation().add(0, le.getHeight() / 2, 0).toVector());
+                    double d = toCenter.length();
+                    if (d < 0.01) continue;
+                    if (prisoners.contains(le.getUniqueId())) {
+                        if (d > r - 1.0) le.setVelocity(toCenter.normalize().multiply(0.45).setY(0.1));
+                        if (t % 20 == 0) {
+                            Damage.deal(p, le, dmg);
+                            le.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 30, 0, false, false));
+                        }
+                    } else if (d < r + 0.8 && d > r - 1.5) {
+                        le.setVelocity(toCenter.normalize().multiply(-0.5).setY(0.1));
+                    }
+                }
+                t += 2;
+            }
+        }.runTaskTimer(plugin, 0L, 2L);
+        return true;
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/kit/AriesKit.java =====
+package com.astralis.kit;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Damage;
+import com.astralis.core.StatusManager;
+import com.astralis.fx.Fx;
+import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+/** Aries, The Ram: a brutal charge and a ground-splitting fissure. */
+public final class AriesKit extends Kit {
+    private static final Color RED = Color.fromRGB(0xff5470);
+    private static final Color GOLD = Color.fromRGB(0xffc14d);
+
+    public AriesKit(Astralis plugin) { super(plugin, Constellation.ARIES); }
+
+    @Override public double primaryBaseCooldown() { return v("charge.cooldown", 15); }
+
+    // Passive (Momentum: sprint-hit bonus + knockback) is applied in CombatListener.
+
+    @Override
+    public boolean primary(Player p, double pot) {
+        Vector dir = p.getLocation().getDirection();
+        dir.setY(dir.getY() * 0.25);
+        if (dir.lengthSquared() < 0.01) return false;
+        dir.normalize();
+
+        final Vector d = dir;
+        final double dmg = v("charge.damage", 5) * pot;
+        final int ticks = (int) v("charge.ticks", 9);
+        final int shieldTicks = (int) (v("charge.shield-disable-seconds", 3) * 20);
+        final Set<UUID> hit = new HashSet<>();
+        final Particle.DustOptions red = Fx.dust(RED, 1.3f);
+        final Particle.DustOptions gold = Fx.dust(GOLD, 1.0f);
+
+        plugin.statuses().apply(p.getUniqueId(), StatusManager.Status.NO_FALL, 60, null);
+        Fx.sound(p.getLocation(), Sound.ENTITY_RAVAGER_ROAR, 1f, 1.3f);
+
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || p.isDead() || t >= ticks) {
+                    if (p.isOnline()) p.setVelocity(p.getVelocity().multiply(0.3));
+                    cancel();
+                    return;
+                }
+                p.setVelocity(new Vector(d.getX() * 1.15, d.getY() * 1.15 + (t < 2 ? 0.25 : 0), d.getZ() * 1.15));
+                p.setSprinting(true);
+
+                World w = p.getWorld();
+                Location mid = p.getLocation().add(0, 1, 0);
+                w.spawnParticle(Particle.CLOUD, mid, 4, 0.3, 0.4, 0.3, 0.02);
+                w.spawnParticle(Particle.DUST, mid, 6, 0.4, 0.5, 0.4, 0, t % 2 == 0 ? red : gold);
+                w.spawnParticle(Particle.CRIT, mid, 3, 0.3, 0.4, 0.3, 0.2);
+
+                for (LivingEntity le : targets(p, mid, 2.0)) {
+                    if (!hit.add(le.getUniqueId())) continue;
+                    Damage.deal(p, le, dmg);
+                    le.setVelocity(d.clone().multiply(1.1).setY(0.4));
+                    Fx.sound(le.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1f, 0.7f);
+                    w.spawnParticle(Particle.EXPLOSION, le.getLocation().add(0, 1, 0), 1);
+                    if (le instanceof Player tp && tp.isBlocking()) {
+                        tp.clearActiveItem();
+                        tp.setCooldown(Material.SHIELD, shieldTicks);
+                        Fx.sound(tp.getLocation(), Sound.ITEM_SHIELD_BREAK, 1f, 1f);
+                    }
+                }
+                t++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        return true;
+    }
+
+    @Override
+    public boolean ultimate(Player p, double pot) {
+        final Location start = p.getLocation().clone();
+        Vector dir = start.getDirection().setY(0);
+        if (dir.lengthSquared() < 0.01) return false;
+        final Vector d = dir.normalize();
+        final double length = v("quake.length", 18);
+        final double dmg = v("quake.damage", 7) * pot;
+        final World w = p.getWorld();
+        final Set<UUID> hit = new HashSet<>();
+
+        Fx.sound(start, Sound.ENTITY_RAVAGER_ROAR, 1.5f, 0.6f);
+
+        new BukkitRunnable() {
+            int t = 0;
+            double dist = 1.5;
+
+            @Override
+            public void run() {
+                if (!p.isOnline()) { cancel(); return; }
+
+                // Wind-up: the earth gathers beneath the Ram
+                if (t < 8) {
+                    Fx.ring(p.getLocation().add(0, 0.1, 0), 2.6 - t * 0.28, 18, Particle.CRIT, null);
+                    if (t % 3 == 0) Fx.sound(p.getLocation(), Sound.BLOCK_STONE_BREAK, 1f, 0.5f);
+                    t++;
+                    return;
+                }
+                if (dist > length) {
+                    Location end = start.clone().add(d.clone().multiply(length));
+                    w.spawnParticle(Particle.EXPLOSION, end.add(0, 0.5, 0), 3, 0.8, 0.2, 0.8, 0);
+                    Fx.sound(end, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.6f);
+                    cancel();
+                    return;
+                }
+
+                Location pos = start.clone().add(d.clone().multiply(dist));
+                Block ground = ground(pos);
+                if (ground != null) {
+                    Location s = ground.getLocation().add(0.5, 1.05, 0.5);
+                    w.spawnParticle(Particle.BLOCK, s, 28, 0.7, 0.15, 0.7, 0.12, ground.getBlockData());
+                    w.spawnParticle(Particle.CRIT, s, 6, 0.6, 0.3, 0.6, 0.3);
+                    w.spawnParticle(Particle.LARGE_SMOKE, s, 2, 0.5, 0.1, 0.5, 0.01);
+                    pos.setY(s.getY());
+                }
+                if (((int) (dist / 1.4)) % 2 == 0) Fx.sound(pos, Sound.ENTITY_GENERIC_EXPLODE, 0.45f, 0.5f + (float) (dist / length) * 0.5f);
+
+                for (LivingEntity le : targets(p, pos.clone().add(0, 1, 0), 2.3)) {
+                    if (!hit.add(le.getUniqueId())) continue;
+                    Damage.deal(p, le, dmg);
+                    le.setVelocity(new Vector(d.getX() * 0.35, 0.95, d.getZ() * 0.35));
+                    le.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1, false, true));
+                    w.spawnParticle(Particle.EXPLOSION, le.getLocation().add(0, 0.5, 0), 1);
+                }
+                dist += 1.4;
+            }
+
+            Block ground(Location pos) {
+                Block b = pos.getBlock();
+                for (int i = 0; i < 6; i++) {
+                    if (b.getType().isSolid()) {
+                        if (!b.getRelative(BlockFace.UP).getType().isSolid()) return b;
+                        b = b.getRelative(BlockFace.UP);
+                    } else {
+                        b = b.getRelative(BlockFace.DOWN);
+                    }
+                }
+                return null;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        return true;
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/kit/CassiopeiaKit.java =====
+package com.astralis.kit;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Damage;
+import com.astralis.core.StatusManager;
+import com.astralis.fx.Fx;
+import org.bukkit.*;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+/** Cassiopeia, The Queen: an unyielding aegis and a collapsing gravity well. */
+public final class CassiopeiaKit extends Kit {
+    private static final Color VIOLET = Color.fromRGB(0xb57bff);
+
+    public CassiopeiaKit(Astralis plugin) { super(plugin, Constellation.CASSIOPEIA); }
+
+    @Override public double primaryBaseCooldown() { return v("aegis.cooldown", 22); }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void passive(Player p, double pot) {
+        if (p.getHealth() <= p.getMaxHealth() * v("poise-threshold", 0.5)) {
+            p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 30, 0, true, false));
+        }
+    }
+
+    @Override
+    public boolean primary(Player p, double pot) {
+        final int dur = (int) (v("aegis.seconds", 8) * 20);
+        int amp = (int) v("aegis.absorption-amplifier", 1) + (pot >= 1.15 ? 1 : 0);
+        final Particle.DustOptions violet = Fx.dust(VIOLET, 1.1f);
+
+        p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, dur, amp, false, true));
+        plugin.statuses().apply(p.getUniqueId(), StatusManager.Status.AEGIS, dur, p.getUniqueId());
+        Fx.sound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 1.6f);
+        Fx.sound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.4f, 0.8f);
+        p.getWorld().spawnParticle(Particle.END_ROD, p.getLocation().add(0, 1, 0), 40, 0.5, 0.8, 0.5, 0.15);
+
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || p.isDead() || !plugin.statuses().has(p.getUniqueId(), StatusManager.Status.AEGIS)) {
+                    if (p.isOnline()) Fx.sound(p.getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1f, 0.8f);
+                    cancel();
+                    return;
+                }
+                World w = p.getWorld();
+                Location c = p.getLocation().add(0, 1.0, 0);
+                for (int i = 0; i < 3; i++) {
+                    double a = t * 0.25 + i * (2 * Math.PI / 3);
+                    Location l = c.clone().add(Math.cos(a) * 1.25, Math.sin(t * 0.1 + i) * 0.4, Math.sin(a) * 1.25);
+                    w.spawnParticle(Particle.END_ROD, l, 1, 0, 0, 0, 0);
+                    w.spawnParticle(Particle.DUST, l, 2, 0.05, 0.05, 0.05, 0, violet);
+                }
+                if (t % 6 == 0) Fx.ring(p.getLocation().add(0, 0.1, 0), 1.1, 14, Particle.DUST, violet);
+                t++;
+            }
+        }.runTaskTimer(plugin, 0L, 2L);
+        return true;
+    }
+
+    @Override
+    public boolean ultimate(Player p, double pot) {
+        final Location c = p.getLocation().clone();
+        final World w = c.getWorld();
+        final double r = v("gravity.radius", 7);
+        final int duration = (int) (v("gravity.seconds", 6) * 20 * pot);
+        final double collapse = v("gravity.collapse-damage", 3) * pot;
+        final Particle.DustOptions violet = Fx.dust(VIOLET, 1.3f);
+
+        Fx.sound(c, Sound.BLOCK_END_PORTAL_SPAWN, 0.8f, 1.8f);
+        Fx.sound(c, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 1.5f);
+
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || t >= duration) {
+                    collapse();
+                    cancel();
+                    return;
+                }
+                // Outer boundary and an inward-pulsing ring
+                Fx.ring(c.clone().add(0, 0.15, 0), r, 40, Particle.DUST, violet);
+                double inner = r * (1 - ((t % 40) / 40.0));
+                Fx.ring(c.clone().add(0, 0.2, 0), inner, Math.max(8, (int) (inner * 6)), Particle.REVERSE_PORTAL, null);
+
+                // The crown: five stars circling above the well
+                for (int i = 0; i < 5; i++) {
+                    double a = i * (2 * Math.PI / 5) + t * 0.05;
+                    Location s = c.clone().add(Math.cos(a) * 1.4, 4 + (i % 2) * 0.6, Math.sin(a) * 1.4);
+                    w.spawnParticle(Particle.END_ROD, s, 1, 0, 0, 0, 0);
+                    w.spawnParticle(Particle.DUST, s, 2, 0.08, 0.08, 0.08, 0, violet);
+                }
+                // Falling stardust
+                for (int i = 0; i < 3; i++) {
+                    double a = rnd(0, Math.PI * 2), d = Math.sqrt(rnd(0, 1)) * r;
+                    w.spawnParticle(Particle.ENCHANT, c.clone().add(Math.cos(a) * d, rnd(0.5, 3), Math.sin(a) * d), 1, 0, 0, 0, 0.3);
+                }
+
+                if (t % 10 == 0) {
+                    for (LivingEntity le : targets(p, c, r)) {
+                        le.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 1, false, true));
+                        Vector pull = c.toVector().subtract(le.getLocation().toVector()).setY(0);
+                        if (pull.lengthSquared() > 2.25) le.setVelocity(le.getVelocity().add(pull.normalize().multiply(0.2)));
+                    }
+                    if (p.getLocation().distanceSquared(c) <= r * r) {
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 30, 0, false, true));
+                    }
+                }
+                t += 2;
+            }
+
+            void collapse() {
+                Fx.sound(c, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.2f, 1.2f);
+                w.spawnParticle(Particle.SONIC_BOOM, c.clone().add(0, 1, 0), 1);
+                w.spawnParticle(Particle.END_ROD, c.clone().add(0, 1, 0), 60, 0.5, 0.8, 0.5, 0.35);
+                for (LivingEntity le : targets(p, c, r)) Damage.deal(p, le, collapse);
+            }
+        }.runTaskTimer(plugin, 0L, 2L);
+        return true;
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/kit/DracoKit.java =====
+package com.astralis.kit;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Damage;
+import com.astralis.core.StatusManager;
+import com.astralis.fx.Fx;
+import org.bukkit.*;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+/** Draco, The Dragon: a cone of flame and a blazing dive from the sky. */
+public final class DracoKit extends Kit {
+    private static final Color EMBER = Color.fromRGB(0xff8a2b);
+
+    public DracoKit(Astralis plugin) { super(plugin, Constellation.DRACO); }
+
+    @Override public double primaryBaseCooldown() { return v("breath.cooldown", 16); }
+
+    @Override
+    public void passive(Player p, double pot) {
+        p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 40, 0, true, false));
+    }
+
+    @Override
+    public boolean primary(Player p, double pot) {
+        final double range = v("breath.range", 9);
+        final double dmg = v("breath.damage", 1.3) * pot;
+        final int fireTicks = (int) (v("breath.fire-seconds", 3) * 20);
+        final Particle.DustOptions ember = Fx.dust(EMBER, 1.2f);
+
+        Fx.sound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_SHOOT, 1.2f, 0.9f);
+        Fx.sound(p.getLocation(), Sound.ITEM_FIRECHARGE_USE, 1f, 0.6f);
+
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || p.isDead() || t >= 24) { cancel(); return; }
+                World w = p.getWorld();
+                Location eye = p.getEyeLocation();
+                Vector dir = eye.getDirection().normalize();
+                Location mouth = eye.clone().add(dir.clone().multiply(0.6)).subtract(0, 0.25, 0);
+
+                for (int i = 0; i < 16; i++) {
+                    double dist = rnd(0.5, range);
+                    double spread = dist * 0.2;
+                    Location l = mouth.clone().add(dir.clone().multiply(dist))
+                            .add(rnd(-spread, spread), rnd(-spread, spread), rnd(-spread, spread));
+                    w.spawnParticle(Particle.FLAME, l, 1, 0, 0, 0, 0.01);
+                    if (i % 4 == 0) w.spawnParticle(Particle.LARGE_SMOKE, l, 1, 0.05, 0.05, 0.05, 0.01);
+                    if (i % 5 == 0) w.spawnParticle(Particle.DUST, l, 1, 0.1, 0.1, 0.1, 0, ember);
+                }
+                if (t % 5 == 0) Fx.sound(mouth, Sound.ENTITY_BLAZE_SHOOT, 0.7f, 0.7f);
+
+                if (t % 4 == 0) {
+                    Location mid = eye.clone().add(dir.clone().multiply(range / 2));
+                    for (LivingEntity le : targets(p, mid, range / 2 + 1)) {
+                        Vector to = le.getLocation().add(0, le.getHeight() / 2, 0).toVector().subtract(eye.toVector());
+                        double dist = to.length();
+                        if (dist < 0.01 || dist > range + 0.5) continue;
+                        if (to.normalize().dot(dir) < 0.88 || !p.hasLineOfSight(le)) continue;
+                        Damage.deal(p, le, dmg);
+                        le.setFireTicks(Math.max(le.getFireTicks(), fireTicks));
+                    }
+                }
+                // Channeling the breath slows the Dragon slightly
+                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 6, 0, false, false));
+                t++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        return true;
+    }
+
+    @Override
+    public boolean ultimate(Player p, double pot) {
+        Vector fwd = p.getLocation().getDirection().setY(0);
+        if (fwd.lengthSquared() > 0.01) fwd.normalize().multiply(0.45);
+        else fwd = new Vector(0, 0, 0);
+
+        plugin.statuses().apply(p.getUniqueId(), StatusManager.Status.NO_FALL, 200, null);
+        p.setVelocity(new Vector(fwd.getX(), 1.5, fwd.getZ()));
+        Fx.sound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1.5f, 0.8f);
+        Fx.sound(p.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.2f, 0.5f);
+
+        new BukkitRunnable() {
+            int t = 0;
+            boolean diving = false;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || p.isDead() || t > 120) { cancel(); return; }
+                t++;
+                Location l = p.getLocation();
+                World w = l.getWorld();
+                w.spawnParticle(Particle.FLAME, l, 8, 0.3, 0.1, 0.3, 0.03);
+                w.spawnParticle(Particle.LARGE_SMOKE, l, 2, 0.3, 0.1, 0.3, 0.01);
+
+                if (!diving) {
+                    if (t >= 14) {
+                        diving = true;
+                        Fx.sound(l, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.4f, 1.2f);
+                    }
+                    return;
+                }
+                Vector look = l.getDirection().setY(0);
+                if (look.lengthSquared() > 0.01) look.normalize().multiply(0.35);
+                else look = new Vector(0, 0, 0);
+                p.setVelocity(new Vector(look.getX(), -2.0, look.getZ()));
+                p.setFallDistance(0);
+                if (t > 18 && p.isOnGround()) {
+                    slam(p, pot);
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
+        return true;
+    }
+
+    private void slam(Player p, double pot) {
+        final Location c = p.getLocation().clone();
+        final World w = c.getWorld();
+        final double radius = v("wyrmfall.radius", 7);
+        final double dmg = v("wyrmfall.damage", 8) * pot;
+
+        Fx.sound(c, Sound.ENTITY_GENERIC_EXPLODE, 1.6f, 0.6f);
+        Fx.sound(c, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.2f, 0.8f);
+        w.spawnParticle(Particle.EXPLOSION_EMITTER, c, 1);
+        w.spawnParticle(Particle.LAVA, c, 30, 1.5, 0.2, 1.5, 0);
+
+        for (LivingEntity le : targets(p, c, radius)) {
+            double dist = le.getLocation().distance(c);
+            Damage.deal(p, le, dmg * (1.0 - 0.4 * (dist / radius)));
+            le.setFireTicks(Math.max(le.getFireTicks(), 80));
+            Vector away = le.getLocation().toVector().subtract(c.toVector()).setY(0);
+            if (away.lengthSquared() > 0.01) le.setVelocity(away.normalize().multiply(0.9).setY(0.7));
+            else le.setVelocity(new Vector(0, 0.7, 0));
+        }
+
+        new BukkitRunnable() {
+            double r = 1;
+
+            @Override
+            public void run() {
+                if (r > radius) { cancel(); return; }
+                Location ring = c.clone().add(0, 0.2, 0);
+                Fx.ring(ring, r, (int) (r * 10) + 8, Particle.FLAME, null);
+                Fx.ring(ring.clone().add(0, 0.5, 0), r * 0.85, (int) (r * 6) + 6, Particle.LARGE_SMOKE, null);
+                r += 1.2;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/kit/GeminiKit.java =====
+package com.astralis.kit;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Damage;
+import com.astralis.core.StatusManager;
+import com.astralis.fx.Fx;
+import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+/** Gemini, The Twins: a blink with a detonating afterimage, and an echoing twin. */
+public final class GeminiKit extends Kit {
+    private static final Color TEAL = Color.fromRGB(0x6ff2c5);
+
+    public GeminiKit(Astralis plugin) { super(plugin, Constellation.GEMINI); }
+
+    @Override public double primaryBaseCooldown() { return v("step.cooldown", 12); }
+
+    // Passive (Afterimage dodge) is applied in CombatListener.
+
+    @Override
+    public boolean primary(Player p, double pot) {
+        final double range = v("step.range", 14);
+        final Location from = p.getLocation().clone();
+        final Location eye = p.getEyeLocation();
+        final Vector dir = eye.getDirection().normalize();
+        final World w = p.getWorld();
+
+        RayTraceResult r = w.rayTraceBlocks(eye, dir, range, FluidCollisionMode.NEVER, true);
+        double reach = r == null ? range : Math.max(0, r.getHitPosition().distance(eye.toVector()) - 0.8);
+
+        Location dest = null;
+        for (double d = reach; d >= 1.5; d -= 0.5) {
+            Location t = eye.clone().add(dir.clone().multiply(d));
+            t.setY(t.getY() - p.getEyeHeight());
+            Block feet = t.getBlock();
+            Block head = feet.getRelative(0, 1, 0);
+            if (feet.isPassable() && head.isPassable() && !feet.isLiquid()) {
+                dest = t;
+                break;
+            }
+        }
+        if (dest == null) { fail(p, "No room to blink there."); return false; }
+        dest.setYaw(from.getYaw());
+        dest.setPitch(from.getPitch());
+
+        // Departure trail
+        Fx.line(from.clone().add(0, 1, 0), dest.clone().add(0, 1, 0), 0.4, Particle.REVERSE_PORTAL, null);
+        Fx.line(from.clone().add(0, 1, 0), dest.clone().add(0, 1, 0), 0.6, Particle.DUST, Fx.dust(TEAL, 1.2f));
+        Fx.sound(from, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.7f);
+        Fx.sound(from, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1f, 1.2f);
+
+        p.teleport(dest);
+        p.setFallDistance(0);
+        Fx.sound(dest, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 0.8f, 1.6f);
+        w.spawnParticle(Particle.END_ROD, dest.clone().add(0, 1, 0), 20, 0.3, 0.6, 0.3, 0.1);
+
+        // The afterimage lingers, then detonates and drags enemies toward it.
+        final double radius = v("step.radius", 3.5);
+        final double dmg = v("step.damage", 2) * pot;
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (t >= 30) {
+                    Fx.sound(from, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.2f, 0.9f);
+                    w.spawnParticle(Particle.EXPLOSION, from.clone().add(0, 1, 0), 1);
+                    w.spawnParticle(Particle.END_ROD, from.clone().add(0, 1, 0), 40, 0.6, 0.8, 0.6, 0.25);
+                    Fx.ring(from.clone().add(0, 0.2, 0), radius, 36, Particle.DUST, Fx.dust(TEAL, 1.4f));
+                    for (LivingEntity le : targets(p, from.clone().add(0, 1, 0), radius)) {
+                        Damage.deal(p, le, dmg);
+                        le.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1, false, true));
+                        Vector pull = from.toVector().subtract(le.getLocation().toVector()).setY(0);
+                        if (pull.lengthSquared() > 0.01) le.setVelocity(le.getVelocity().add(pull.normalize().multiply(0.5)));
+                    }
+                    cancel();
+                    return;
+                }
+                if (t % 2 == 0) Fx.silhouette(from, TEAL, 1.0f);
+                if (t > 20 && t % 2 == 0) Fx.ring(from.clone().add(0, 0.2, 0), radius * (30 - t) / 10.0, 14, Particle.DUST, Fx.dust(TEAL, 0.9f));
+                t++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        return true;
+    }
+
+    @Override
+    public boolean ultimate(Player p, double pot) {
+        final int dur = (int) (v("echo.seconds", 8) * 20);
+        plugin.statuses().apply(p.getUniqueId(), StatusManager.Status.ECHO, dur, p.getUniqueId());
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, dur, 1, false, true));
+
+        World w = p.getWorld();
+        Fx.sound(p.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.2f, 1.1f);
+        Fx.sound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.2f, 1.5f);
+        w.spawnParticle(Particle.END_ROD, p.getLocation().add(0, 1, 0), 40, 0.4, 0.8, 0.4, 0.2);
+
+        final Deque<Location> trail = new ArrayDeque<>();
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || p.isDead() || t >= dur) {
+                    if (p.isOnline()) {
+                        Fx.sound(p.getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1f, 1.4f);
+                        p.getWorld().spawnParticle(Particle.END_ROD, p.getLocation().add(0, 1, 0), 25, 0.4, 0.8, 0.4, 0.15);
+                    }
+                    cancel();
+                    return;
+                }
+                trail.addLast(p.getLocation().clone());
+                if (trail.size() > 8) {
+                    Location old = trail.pollFirst();
+                    if (t % 2 == 0 && old != null) Fx.silhouette(old, TEAL, 0.9f);
+                }
+                t++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        return true;
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/kit/Kit.java =====
+package com.astralis.kit;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Damage;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Location;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
+/** One constellation's passive, primary and ultimate. */
+public abstract class Kit {
+    protected final Astralis plugin;
+    protected final Constellation constellation;
+
+    protected Kit(Astralis plugin, Constellation constellation) {
+        this.plugin = plugin;
+        this.constellation = constellation;
+    }
+
+    public abstract double primaryBaseCooldown();
+
+    /** Called every 0.5s while this sigil is the player's active one. */
+    public void passive(Player p, double potency) { }
+
+    /** @return true if the ability actually fired (so cooldown is consumed). */
+    public abstract boolean primary(Player p, double potency);
+
+    /** @return true if the ability actually fired (so Stardust is spent). */
+    public abstract boolean ultimate(Player p, double potency);
+
+    protected double v(String path, double def) {
+        return plugin.val(constellation.name().toLowerCase() + "." + path, def);
+    }
+
+    /** Valid living targets whose body centre lies within radius of center. */
+    protected List<LivingEntity> targets(Player caster, Location center, double radius) {
+        List<LivingEntity> out = new ArrayList<>();
+        double r2 = radius * radius;
+        for (Entity e : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
+            if (!Damage.valid(caster, e)) continue;
+            LivingEntity le = (LivingEntity) e;
+            if (le.getLocation().add(0, le.getHeight() / 2, 0).distanceSquared(center) <= r2) out.add(le);
+        }
+        return out;
+    }
+
+    protected static double rnd(double a, double b) { return ThreadLocalRandom.current().nextDouble(a, b); }
+
+    protected void fail(Player p, String msg) { p.sendActionBar(Component.text(msg, NamedTextColor.RED)); }
+}
+
+
+===== FILE: src/main/java/com/astralis/kit/OrionKit.java =====
+package com.astralis.kit;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Damage;
+import com.astralis.core.StatusManager;
+import com.astralis.core.Targeting;
+import com.astralis.fx.Fx;
+import org.bukkit.*;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
+
+/** Orion, The Hunter: piercing marks and a rain of star-arrows. */
+public final class OrionKit extends Kit {
+    private static final Color CYAN = Color.fromRGB(0x5ad7ff);
+
+    public OrionKit(Astralis plugin) { super(plugin, Constellation.ORION); }
+
+    @Override public double primaryBaseCooldown() { return v("beam.cooldown", 14); }
+
+    // Passive (Steady Aim: bonus arrow damage) is applied in CombatListener.
+
+    @Override
+    public boolean primary(Player p, double pot) {
+        double range = v("beam.range", 40);
+        double damage = v("beam.damage", 6) * pot;
+        int markTicks = (int) (v("beam.mark-seconds", 6) * 20);
+        World w = p.getWorld();
+
+        Targeting.Pierce pierce = Targeting.pierce(p, range, 0.45);
+        Location eye = p.getEyeLocation();
+        Vector dir = eye.getDirection().normalize();
+        Location origin = eye.clone().add(dir.clone().multiply(0.8)).subtract(0, 0.25, 0);
+        double length = Math.max(1, origin.distance(pierce.end()));
+
+        // Double-helix beam of starlight
+        Vector[] basis = Fx.basis(dir);
+        Particle.DustTransition tr = new Particle.DustTransition(CYAN, Color.WHITE, 1.1f);
+        for (double d = 0; d < length; d += 0.4) {
+            Location c = origin.clone().add(dir.clone().multiply(d));
+            w.spawnParticle(Particle.END_ROD, c, 1, 0, 0, 0, 0);
+            double ang = d * 2.2;
+            for (int strand = 0; strand < 2; strand++) {
+                double a = ang + strand * Math.PI;
+                Vector off = basis[0].clone().multiply(Math.cos(a) * 0.32).add(basis[1].clone().multiply(Math.sin(a) * 0.32));
+                w.spawnParticle(Particle.DUST_COLOR_TRANSITION, c.clone().add(off), 1, 0, 0, 0, 0, tr);
+            }
+        }
+        Fx.sound(p.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.1f, 1.5f);
+        Fx.sound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.2f, 1.9f);
+
+        int hits = 0;
+        for (LivingEntity le : pierce.entities()) {
+            if (!Damage.deal(p, le, damage)) continue;
+            le.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, markTicks, 0, false, false));
+            plugin.statuses().apply(le.getUniqueId(), StatusManager.Status.MARKED, markTicks, p.getUniqueId());
+            Location bc = le.getLocation().add(0, le.getHeight() / 2, 0);
+            w.spawnParticle(Particle.END_ROD, bc, 25, 0.3, 0.4, 0.3, 0.12);
+            w.spawnParticle(Particle.CRIT, bc, 15, 0.3, 0.4, 0.3, 0.3);
+            hits++;
+        }
+        if (hits > 0) p.playSound(p.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 1f, 1.5f);
+        return true;
+    }
+
+    @Override
+    public boolean ultimate(Player p, double pot) {
+        Location aim = Targeting.aim(p, 45);
+        if (aim == null) { fail(p, "Aim at the ground or an enemy."); return false; }
+
+        final Location center = aim.clone();
+        final World w = center.getWorld();
+        final double radius = v("volley.radius", 6.5);
+        final double dmg = v("volley.damage", 2.5) * pot;
+        final int duration = (int) (v("volley.seconds", 4) * 20);
+        final Particle.DustOptions cyan = Fx.dust(CYAN, 1.2f);
+
+        Fx.sound(center, Sound.BLOCK_BEACON_POWER_SELECT, 1.5f, 1.8f);
+        Fx.sound(center, Sound.ENTITY_EVOKER_CAST_SPELL, 1.2f, 1.4f);
+
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || t >= duration) {
+                    Fx.sound(center, Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1.6f);
+                    cancel();
+                    return;
+                }
+                if (t % 4 == 0) Fx.ring(center.clone().add(0, 0.15, 0), radius, 48, Particle.DUST, cyan);
+                if (t % 5 == 0) {
+                    for (int i = 0; i < 3; i++) strike(randomPoint());
+                }
+                t++;
+            }
+
+            Location randomPoint() {
+                double a = rnd(0, Math.PI * 2);
+                double d = Math.sqrt(rnd(0, 1)) * radius;
+                Location l = center.clone().add(Math.cos(a) * d, 0, Math.sin(a) * d);
+                RayTraceResult g = w.rayTraceBlocks(l.clone().add(0, 3, 0), new Vector(0, -1, 0), 8,
+                        FluidCollisionMode.NEVER, true);
+                if (g != null) l.setY(g.getHitPosition().getY());
+                return l;
+            }
+
+            void strike(Location target) {
+                Fx.ring(target.clone().add(0, 0.1, 0), 1.8, 12, Particle.DUST, cyan);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    for (double dy = 0; dy < 12; dy += 0.6) {
+                        w.spawnParticle(Particle.END_ROD, target.clone().add(0, dy, 0), 1, 0.04, 0, 0.04, 0.01);
+                    }
+                    w.spawnParticle(Particle.FIREWORK, target.clone().add(0, 0.3, 0), 14, 0.4, 0.2, 0.4, 0.08);
+                    w.spawnParticle(Particle.EXPLOSION, target.clone().add(0, 0.3, 0), 1);
+                    Fx.sound(target, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 0.5f, 1.7f);
+                    for (LivingEntity le : targets(p, target, 2.0)) Damage.deal(p, le, dmg);
+                }, 6L);
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        return true;
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/kit/PhoenixKit.java =====
+package com.astralis.kit;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Damage;
+import com.astralis.core.StatusManager;
+import com.astralis.core.Tier;
+import com.astralis.fx.Fx;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
+import org.bukkit.*;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+/** Phoenix, The Reborn (Mythical): cheats death, flies in fire, burns away every affliction. */
+public final class PhoenixKit extends Kit {
+    private static final Color GOLD = Color.fromRGB(0xffe27a);
+    private static final Color EMBER = Color.fromRGB(0xff7a2b);
+
+    public PhoenixKit(Astralis plugin) { super(plugin, Constellation.PHOENIX); }
+
+    @Override public double primaryBaseCooldown() { return v("wings.cooldown", 18); }
+
+    // ------------------------------------------------------------------ passive: Undying Ember
+    /** Called from CombatListener when a lethal hit lands. @return true if death was cheated. */
+    @SuppressWarnings("deprecation")
+    public boolean tryRevive(Player p, double pot, Tier tier) {
+        String key = "PHOENIX:R";
+        if (!plugin.cooldowns().ready(p.getUniqueId(), key)) return false;
+        plugin.cooldowns().set(p.getUniqueId(), key, v("revive.cooldown", 300) * plugin.tierCooldownMult(tier));
+
+        p.setHealth(Math.max(1.0, Math.min(p.getMaxHealth(), p.getMaxHealth() * v("revive.health", 0.4))));
+        p.setFireTicks(0);
+        p.setFallDistance(0);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 40, 1, false, true));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 160, 0, false, true));
+        cleanse(p);
+
+        Location c = p.getLocation().clone();
+        World w = c.getWorld();
+        Fx.sound(c, Sound.ITEM_TOTEM_USE, 1.5f, 0.9f);
+        Fx.sound(c, Sound.ENTITY_BLAZE_SHOOT, 1.5f, 0.5f);
+        w.spawnParticle(Particle.TOTEM_OF_UNDYING, c.clone().add(0, 1, 0), 90, 0.5, 1.0, 0.5, 0.5);
+        w.spawnParticle(Particle.FLAME, c.clone().add(0, 1, 0), 60, 0.6, 0.9, 0.6, 0.15);
+        p.showTitle(Title.title(Component.text("✦ REBORN ✦", NamedTextColor.GOLD),
+                Component.text("The ash remembers your name", NamedTextColor.GRAY),
+                Title.Times.times(Duration.ofMillis(100), Duration.ofMillis(1500), Duration.ofMillis(400))));
+
+        double dmg = v("revive.burst-damage", 4) * pot;
+        for (LivingEntity le : targets(p, c.clone().add(0, 1, 0), 4.5)) {
+            Damage.deal(p, le, dmg);
+            le.setFireTicks(Math.max(le.getFireTicks(), 80));
+            Vector away = le.getLocation().toVector().subtract(c.toVector()).setY(0);
+            if (away.lengthSquared() > 0.01) le.setVelocity(away.normalize().multiply(0.8).setY(0.45));
+        }
+        wave(c, 4.5, 6);
+        return true;
+    }
+
+    private void cleanse(Player p) {
+        PotionEffectType[] bad = {PotionEffectType.POISON, PotionEffectType.WITHER, PotionEffectType.SLOWNESS,
+                PotionEffectType.WEAKNESS, PotionEffectType.BLINDNESS, PotionEffectType.MINING_FATIGUE,
+                PotionEffectType.NAUSEA, PotionEffectType.DARKNESS};
+        for (PotionEffectType t : bad) p.removePotionEffect(t);
+    }
+
+    private void wave(Location c, double radius, int steps) {
+        final Particle.DustOptions gold = Fx.dust(GOLD, 1.4f);
+        new BukkitRunnable() {
+            int i = 1;
+
+            @Override
+            public void run() {
+                if (i > steps) { cancel(); return; }
+                double r = radius * i / steps;
+                Location ring = c.clone().add(0, 0.2, 0);
+                Fx.ring(ring, r, (int) (r * 10) + 8, Particle.FLAME, null);
+                Fx.ring(ring.clone().add(0, 0.3, 0), r * 0.9, (int) (r * 6) + 6, Particle.DUST, gold);
+                i++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    // ------------------------------------------------------------------ primary: Cinder Wings
+    @Override
+    public boolean primary(Player p, double pot) {
+        Vector dir = p.getLocation().getDirection();
+        dir.setY(Math.max(dir.getY(), 0.2));
+        if (dir.lengthSquared() < 0.01) return false;
+        dir.normalize();
+
+        final Vector d = dir;
+        final double dmg = v("wings.damage", 4) * pot;
+        final Set<UUID> hit = new HashSet<>();
+        final Particle.DustOptions gold = Fx.dust(GOLD, 1.2f);
+        final Particle.DustOptions ember = Fx.dust(EMBER, 1.3f);
+
+        plugin.statuses().apply(p.getUniqueId(), StatusManager.Status.NO_FALL, 120, null);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 80, 0, false, false));
+        p.setVelocity(d.clone().multiply(1.25));
+        Fx.sound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1.4f, 1.3f);
+        Fx.sound(p.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1f, 0.8f);
+
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!p.isOnline() || p.isDead() || t >= 14) { cancel(); return; }
+                World w = p.getWorld();
+                Location mid = p.getLocation().add(0, 1, 0);
+
+                // Two wings of fire, flapping
+                Vector right = new Vector(-d.getZ(), 0, d.getX());
+                if (right.lengthSquared() < 0.01) right = new Vector(1, 0, 0);
+                right.normalize();
+                double flap = Math.sin(t * 0.9) * 0.5;
+                for (int k = 1; k <= 8; k++) {
+                    double out = 0.4 + k * 0.28;
+                    double up = 0.15 * k + flap * (k / 8.0);
+                    for (int side = -1; side <= 1; side += 2) {
+                        Location l = mid.clone().add(right.clone().multiply(out * side)).add(0, up, 0)
+                                .subtract(d.clone().multiply(0.1 * k));
+                        w.spawnParticle(k % 2 == 0 ? Particle.FLAME : Particle.SMALL_FLAME, l, 1, 0.03, 0.03, 0.03, 0.005);
+                        if (k % 3 == 0) w.spawnParticle(Particle.DUST, l, 1, 0, 0, 0, 0, t % 2 == 0 ? gold : ember);
+                    }
+                }
+                w.spawnParticle(Particle.LAVA, mid, 1, 0.3, 0.3, 0.3, 0);
+
+                for (LivingEntity le : targets(p, mid, 2.6)) {
+                    if (!hit.add(le.getUniqueId())) continue;
+                    Damage.deal(p, le, dmg);
+                    le.setFireTicks(Math.max(le.getFireTicks(), 60));
+                    le.setVelocity(d.clone().multiply(0.6).setY(0.3));
+                    Fx.sound(le.getLocation(), Sound.ENTITY_BLAZE_HURT, 1f, 1.2f);
+                }
+                t++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        return true;
+    }
+
+    // ------------------------------------------------------------------ ultimate: Rebirth Nova
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean ultimate(Player p, double pot) {
+        final Location c = p.getLocation().clone();
+        final World w = c.getWorld();
+        final double radius = v("nova.radius", 8);
+        final double dmg = v("nova.damage", 6) * pot;
+
+        double max = p.getMaxHealth();
+        p.setHealth(Math.min(max, p.getHealth() + max * v("nova.heal", 0.4)));
+        p.setFireTicks(0);
+        cleanse(p);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 1, false, true));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 160, 0, false, true));
+
+        Fx.sound(c, Sound.ENTITY_GENERIC_EXPLODE, 1.4f, 0.7f);
+        Fx.sound(c, Sound.ITEM_TOTEM_USE, 1f, 1.3f);
+        w.spawnParticle(Particle.EXPLOSION_EMITTER, c.clone().add(0, 1, 0), 1);
+        w.spawnParticle(Particle.TOTEM_OF_UNDYING, c.clone().add(0, 1, 0), 70, 0.5, 1.0, 0.5, 0.5);
+
+        for (LivingEntity le : targets(p, c.clone().add(0, 1, 0), radius)) {
+            double dist = le.getLocation().distance(c);
+            Damage.deal(p, le, dmg * (1.0 - 0.3 * (dist / radius)));
+            le.setFireTicks(Math.max(le.getFireTicks(), 80));
+            Vector away = le.getLocation().toVector().subtract(c.toVector()).setY(0);
+            if (away.lengthSquared() > 0.01) le.setVelocity(away.normalize().multiply(0.85).setY(0.6));
+        }
+        wave(c, radius, 8);
+        return true;
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/listener/AbilityListener.java =====
+package com.astralis.listener;
+
+import com.astralis.Astralis;
+import com.astralis.core.Sigil;
+import com.astralis.core.SigilManager;
+import com.astralis.core.Tier;
+import com.astralis.fx.Fx;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import java.time.Duration;
+
+/** Turns clicks into casts. Right-click = primary, sneak + right-click (or F) = Zenith. */
+public final class AbilityListener implements Listener {
+    private final Astralis plugin;
+
+    public AbilityListener(Astralis plugin) { this.plugin = plugin; }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onInteract(PlayerInteractEvent e) {
+        Action a = e.getAction();
+        if (a == Action.PHYSICAL) return;
+        ItemStack item = e.getItem();
+        if (item == null) return;
+
+        SigilManager sigils = plugin.sigils();
+        boolean right = a == Action.RIGHT_CLICK_AIR || a == Action.RIGHT_CLICK_BLOCK;
+
+        if (sigils.isCore(item)) {
+            e.setCancelled(true);
+            if (right && e.getHand() == EquipmentSlot.HAND) upgrade(e.getPlayer());
+            return;
+        }
+        if (!sigils.isSigil(item)) return;
+
+        Player p = e.getPlayer();
+        // Let people still open chests, doors, etc. with a sigil in hand (unless sneaking).
+        if (a == Action.RIGHT_CLICK_BLOCK && !p.isSneaking() && e.getClickedBlock() != null
+                && e.getClickedBlock().getType().isInteractable()) return;
+
+        e.setCancelled(true);
+        if (!right || e.getHand() != EquipmentSlot.HAND) return;
+        if (p.isSneaking()) plugin.abilities().ultimate(p);
+        else plugin.abilities().primary(p);
+    }
+
+    /** F key (swap hands) is an alternate Zenith trigger - handy for Bedrock/Geyser players. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onSwap(PlayerSwapHandItemsEvent e) {
+        if (!plugin.getConfig().getBoolean("general.ultimate-on-swap", true)) return;
+        // getOffHandItem() is the item that is currently in the main hand
+        if (!plugin.sigils().isSigil(e.getOffHandItem())) return;
+        e.setCancelled(true);
+        plugin.abilities().ultimate(e.getPlayer());
+    }
+
+    private void upgrade(Player p) {
+        SigilManager sm = plugin.sigils();
+        ItemStack off = p.getInventory().getItemInOffHand();
+        Sigil s = sm.read(off);
+        if (s == null) {
+            p.sendActionBar(Component.text("Hold a Dim sigil in your off-hand.", NamedTextColor.RED));
+            return;
+        }
+        if (s.tier() == Tier.RADIANT) {
+            p.sendActionBar(Component.text("That sigil is already Radiant.", NamedTextColor.RED));
+            return;
+        }
+
+        ItemStack main = p.getInventory().getItemInMainHand().clone();
+        if (main.getAmount() > 1) { main.setAmount(main.getAmount() - 1); p.getInventory().setItemInMainHand(main); }
+        else p.getInventory().setItemInMainHand(null);
+        p.getInventory().setItemInOffHand(sm.upgrade(off));
+
+        var c = s.constellation();
+        p.showTitle(Title.title(
+                c.text("✦✦ ASCENDED ✦✦"),
+                Component.text(c.display() + " burns Radiant", NamedTextColor.GRAY),
+                Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(1800), Duration.ofMillis(500))));
+        Fx.sound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.3f, 1.4f);
+        Fx.sound(p.getLocation(), Sound.ITEM_TOTEM_USE, 0.7f, 1.5f);
+
+        final Particle.DustOptions dust = Fx.dust(c.bukkitColor(), 1.4f);
+        new BukkitRunnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (t >= 36 || !p.isOnline()) {
+                    if (p.isOnline()) p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation().add(0, 1, 0), 50, 0.4, 0.8, 0.4, 0.4);
+                    cancel();
+                    return;
+                }
+                double y = t * 0.065;
+                for (int i = 0; i < 3; i++) {
+                    double ang = t * 0.5 + i * (2 * Math.PI / 3);
+                    Location l = p.getLocation().add(Math.cos(ang) * 0.9, y, Math.sin(ang) * 0.9);
+                    p.getWorld().spawnParticle(Particle.END_ROD, l, 1, 0, 0, 0, 0);
+                    p.getWorld().spawnParticle(Particle.DUST, l, 2, 0.05, 0.05, 0.05, 0, dust);
+                }
+                t++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/listener/CombatListener.java =====
+package com.astralis.listener;
+
+import com.astralis.Astralis;
+import com.astralis.core.*;
+import com.astralis.fx.Fx;
+import com.astralis.kit.PhoenixKit;
+import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
+
+import java.util.concurrent.ThreadLocalRandom;
+
+/** Passive effects, the counter ring on melee/arrows, Stardust gain, and status handling. */
+public final class CombatListener implements Listener {
+    private static final Color TEAL = Color.fromRGB(0x6ff2c5);
+    private final Astralis plugin;
+
+    public CombatListener(Astralis plugin) { this.plugin = plugin; }
+
+    private static boolean isMelee(EntityDamageEvent e) {
+        return e.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK
+                || e.getCause() == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK;
+    }
+
+    private static Player attackerOf(org.bukkit.entity.Entity damager) {
+        if (damager instanceof Player p) return p;
+        if (damager instanceof Projectile pr && pr.getShooter() instanceof Player shooter) return shooter;
+        return null;
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onHit(EntityDamageByEntityEvent e) {
+        if (Damage.isAbility() || !(e.getEntity() instanceof LivingEntity victim)) return;
+        final Player attacker = attackerOf(e.getDamager());
+        final boolean melee = isMelee(e);
+
+        // ---------------- defensive side ----------------
+        if (victim instanceof Player vp && !plugin.disabledWorld(vp.getWorld())) {
+            Sigil vs = plugin.sigils().active(vp);
+            double vpot = vs == null ? 1.0 : plugin.sigils().potency(vp, vs);
+
+            // Gemini - Afterimage: chance to fully dodge a melee hit
+            if (vs != null && vs.constellation() == Constellation.GEMINI && melee
+                    && ThreadLocalRandom.current().nextDouble() < plugin.val("gemini.dodge-chance", 0.10) * vpot) {
+                dodge(vp);
+                e.setCancelled(true);
+                return;
+            }
+
+            // Cassiopeia - Starlit Aegis: reflect a share of melee damage
+            if (melee && plugin.statuses().has(vp.getUniqueId(), StatusManager.Status.AEGIS)
+                    && e.getDamager() instanceof LivingEntity src && src != vp) {
+                final double reflect = e.getDamage() * plugin.val("cassiopeia.aegis.reflect", 0.25) * vpot;
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (vp.isOnline() && src.isValid() && !src.isDead() && Damage.deal(vp, src, reflect)) {
+                        Location l = src.getLocation().add(0, src.getHeight() / 2, 0);
+                        l.getWorld().spawnParticle(Particle.ENCHANTED_HIT, l, 15, 0.3, 0.4, 0.3, 0.3);
+                        Fx.sound(l, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 1.6f);
+                    }
+                });
+            }
+        }
+
+        // ---------------- offensive side ----------------
+        if (attacker == null || attacker == victim || plugin.disabledWorld(attacker.getWorld())) return;
+
+        Sigil as = plugin.sigils().active(attacker);
+        double apot = as == null ? 1.0 : plugin.sigils().potency(attacker, as);
+        double mult = Damage.modifier(attacker, victim);   // counter ring x Orion mark
+        final double base = e.getDamage();
+
+        if (as != null) {
+            switch (as.constellation()) {
+                case ORION -> {
+                    // Steady Aim
+                    if (e.getDamager() instanceof AbstractArrow)
+                        mult *= 1 + plugin.val("orion.arrow-bonus", 0.15) * apot;
+                }
+                case ARIES -> {
+                    // Momentum: sprinting melee hits hit harder and hurl enemies back
+                    if (melee && attacker.isSprinting()) {
+                        mult *= 1 + plugin.val("aries.momentum-bonus", 0.12) * apot;
+                        Vector kb = victim.getLocation().toVector().subtract(attacker.getLocation().toVector()).setY(0);
+                        if (kb.lengthSquared() > 0.01) {
+                            final Vector push = kb.normalize().multiply(0.5).setY(0.22);
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                if (victim.isValid()) victim.setVelocity(victim.getVelocity().add(push));
+                            });
+                        }
+                    }
+                }
+                default -> { }
+            }
+        }
+
+        // Gemini - Twin Echo: every melee hit repeats a moment later
+        if (melee && plugin.statuses().has(attacker.getUniqueId(), StatusManager.Status.ECHO)) {
+            final double echo = base * plugin.val("gemini.echo.ratio", 0.5) * apot;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (attacker.isOnline() && victim.isValid() && !victim.isDead() && Damage.deal(attacker, victim, echo)) {
+                    Location l = victim.getLocation().add(0, victim.getHeight() / 2, 0);
+                    l.getWorld().spawnParticle(Particle.SWEEP_ATTACK, l, 1);
+                    l.getWorld().spawnParticle(Particle.END_ROD, l, 8, 0.3, 0.3, 0.3, 0.1);
+                    Fx.sound(l, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.9f, 1.5f);
+                }
+            }, 6L);
+        }
+
+        e.setDamage(base * mult);
+    }
+
+    /** Stardust gain, using the damage actually dealt. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onHitMonitor(EntityDamageByEntityEvent e) {
+        if (Damage.isAbility() || !(e.getEntity() instanceof LivingEntity victim)) return;
+        double dmg = e.getFinalDamage();
+        if (dmg <= 0) return;
+        Player attacker = attackerOf(e.getDamager());
+        if (attacker != null && attacker != victim) gain(attacker, dmg, victim instanceof Player, true);
+        if (victim instanceof Player vp) gain(vp, dmg, attacker != null, false);
+    }
+
+    private void gain(Player p, double dmg, boolean pvp, boolean dealt) {
+        if (plugin.disabledWorld(p.getWorld()) || plugin.sigils().active(p) == null) return;
+        var cfg = plugin.getConfig();
+        double rate = cfg.getDouble(dealt ? "stardust.per-damage-dealt" : "stardust.per-damage-taken", dealt ? 0.8 : 0.5);
+        double amt = Math.min(cfg.getDouble("stardust.per-hit-cap", 8), dmg * rate);
+        if (!pvp) amt *= cfg.getDouble("stardust.mob-multiplier", 0.25);
+        plugin.stardust().add(p, amt);
+    }
+
+    /** Phoenix - Undying Ember: a lethal hit is cheated (long cooldown). */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onLethal(EntityDamageEvent e) {
+        if (!(e.getEntity() instanceof Player p) || plugin.disabledWorld(p.getWorld())) return;
+        EntityDamageEvent.DamageCause cause = e.getCause();
+        if (cause == EntityDamageEvent.DamageCause.VOID || cause == EntityDamageEvent.DamageCause.SUICIDE
+                || cause == EntityDamageEvent.DamageCause.KILL) return;
+        if (e.getFinalDamage() < p.getHealth()) return;
+        Sigil s = plugin.sigils().active(p);
+        if (s == null || s.constellation() != Constellation.PHOENIX || !plugin.enabled(Constellation.PHOENIX)) return;
+        PhoenixKit kit = (PhoenixKit) plugin.abilities().kit(Constellation.PHOENIX);
+        if (kit.tryRevive(p, plugin.sigils().potency(p, s), s.tier())) e.setCancelled(true);
+    }
+
+    /** Dragon dive / Rampart Charge grant brief fall immunity. */
+    @EventHandler(ignoreCancelled = true)
+    public void onFall(EntityDamageEvent e) {
+        if (e.getCause() == EntityDamageEvent.DamageCause.FALL
+                && plugin.statuses().has(e.getEntity().getUniqueId(), StatusManager.Status.NO_FALL)) {
+            e.setCancelled(true);
+        }
+    }
+
+    private void dodge(Player vp) {
+        Location l = vp.getLocation();
+        Fx.silhouette(l, TEAL, 1f);
+        vp.getWorld().spawnParticle(Particle.END_ROD, l.clone().add(0, 1, 0), 15, 0.3, 0.6, 0.3, 0.08);
+        Fx.sound(l, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1f, 1.8f);
+        vp.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, 1, false, true));
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/listener/SigilListener.java =====
+package com.astralis.listener;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Sigil;
+import com.astralis.core.SigilManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.*;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.*;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.Keyed;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.*;
+
+/** Join/quit, death & drop rules, pickup rules, storage protection. */
+public final class SigilListener implements Listener {
+    private final Astralis plugin;
+    private final Map<UUID, Long> lastWarn = new HashMap<>();
+
+    public SigilListener(Astralis plugin) { this.plugin = plugin; }
+
+    // ------------------------------------------------------------------ join / quit
+    @EventHandler
+    public void onJoin(PlayerJoinEvent e) {
+        Player p = e.getPlayer();
+        plugin.stardust().load(p);
+        plugin.trust().load(p);
+        plugin.sigils().discover(p);
+        plugin.events().onJoin(p);
+
+        if (!plugin.getConfig().getBoolean("general.starter-sigil", true)) return;
+        if (p.getPersistentDataContainer().has(plugin.keys().received, PersistentDataType.BYTE)) return;
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (p.isOnline() && !p.getPersistentDataContainer().has(plugin.keys().received, PersistentDataType.BYTE)) {
+                plugin.sigils().awaken(p, plugin.sigils().pickBalanced());
+            }
+        }, 60L);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent e) {
+        Player p = e.getPlayer();
+        plugin.stardust().save(p);
+        plugin.trust().save(p);
+        plugin.statuses().clearAll(p.getUniqueId());
+        lastWarn.remove(p.getUniqueId());
+    }
+
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent e) { plugin.statuses().clearAll(e.getEntity().getUniqueId()); }
+
+    // ------------------------------------------------------------------ death rules
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onDeath(PlayerDeathEvent e) {
+        Player victim = e.getEntity();
+        Player killer = victim.getKiller();
+        boolean pvp = killer != null && !killer.equals(victim);
+        var cfg = plugin.getConfig();
+        boolean dropPvp = cfg.getBoolean("general.drop-on-pvp-death", true);
+        boolean keepNatural = cfg.getBoolean("general.keep-on-natural-death", true);
+        SigilManager sm = plugin.sigils();
+
+        if (!e.getKeepInventory()) {
+            List<ItemStack> found = new ArrayList<>();
+            for (ItemStack it : e.getDrops()) if (sm.isSigil(it)) found.add(it);
+            if (!found.isEmpty()) {
+                if (pvp && dropPvp) {
+                    e.getDrops().removeIf(sm::isSigil);
+                    for (ItemStack it : found) dropSigil(victim, killer, it);
+                } else if (keepNatural) {
+                    e.getDrops().removeIf(sm::isSigil);
+                    e.getItemsToKeep().addAll(found);
+                }
+            }
+        } else if (pvp && dropPvp) {
+            PlayerInventory inv = victim.getInventory();
+            for (int i = 0; i < inv.getSize(); i++) {
+                ItemStack it = inv.getItem(i);
+                if (sm.isSigil(it)) {
+                    inv.setItem(i, null);
+                    dropSigil(victim, killer, it);
+                }
+            }
+        }
+
+        // Stardust: the killer gains, the fallen keeps only a share
+        if (pvp && sm.active(killer) != null && !plugin.disabledWorld(killer.getWorld())) {
+            plugin.stardust().add(killer, cfg.getDouble("stardust.kill-bonus", 25));
+        }
+        plugin.stardust().set(victim, plugin.stardust().get(victim) * cfg.getDouble("stardust.death-retention", 0.5));
+        plugin.statuses().clearAll(victim.getUniqueId());
+    }
+
+    private void dropSigil(Player victim, Player killer, ItemStack stack) {
+        Item item = victim.getWorld().dropItemNaturally(victim.getLocation(), stack);
+        plugin.sigils().protectDrop(item);
+        Sigil s = plugin.sigils().read(stack);
+        if (s != null && plugin.getConfig().getBoolean("general.broadcast-seizure", true)) {
+            Constellation c = s.constellation();
+            Bukkit.broadcast(Astralis.mm("<gold>✦ <white>" + Astralis.MM.escapeTags(victim.getName()) + "<gray>'s "
+                    + c.tag() + "<bold>" + c.display() + "</bold><gray> sigil was torn loose by <white>"
+                    + Astralis.MM.escapeTags(killer.getName()) + "<gray>! It burns where it fell."));
+        }
+    }
+
+    @EventHandler
+    public void onDrop(PlayerDropItemEvent e) {
+        if (plugin.sigils().isSigil(e.getItemDrop().getItemStack())) plugin.sigils().protectDrop(e.getItemDrop());
+    }
+
+    @EventHandler
+    public void onEntitiesLoad(EntitiesLoadEvent e) {
+        for (Entity en : e.getEntities()) {
+            if (en instanceof Item item && plugin.sigils().isSigil(item.getItemStack())) plugin.sigils().protectDrop(item);
+        }
+    }
+
+    // ------------------------------------------------------------------ pickup rules
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPickup(EntityPickupItemEvent e) {
+        ItemStack st = e.getItem().getItemStack();
+
+        if (plugin.events().isShard(st)) {
+            e.setCancelled(true);
+            if (e.getEntity() instanceof Player p) plugin.events().collect(p, e.getItem());
+            return;
+        }
+
+        SigilManager sm = plugin.sigils();
+        Sigil s = sm.read(st);
+        if (s == null) return;
+        if (!(e.getEntity() instanceof Player p)) { e.setCancelled(true); return; }
+
+        int max = plugin.getConfig().getInt("general.max-sigils-carried", 2);
+        if (sm.carried(p) >= max) {
+            e.setCancelled(true);
+            long now = System.currentTimeMillis();
+            if (now - lastWarn.getOrDefault(p.getUniqueId(), 0L) > 2000) {
+                lastWarn.put(p.getUniqueId(), now);
+                p.sendActionBar(Component.text("You can only carry " + max + " sigils.", NamedTextColor.RED));
+            }
+            return;
+        }
+        sm.tracked().remove(e.getItem().getUniqueId());
+
+        boolean own = s.owner() == null || s.owner().equals(p.getUniqueId());
+        Constellation c = s.constellation();
+        if (!own) {
+            String ownerName = sm.ownerName(st);
+            p.sendActionBar(Astralis.mm(c.tag() + "✦ <gray>This sigil is <red>unattuned<gray> to you: reduced power."));
+            if (plugin.getConfig().getBoolean("general.broadcast-seizure", true)) {
+                Bukkit.broadcast(Astralis.mm("<gold>✦ <white>" + Astralis.MM.escapeTags(p.getName()) + "<gray> seized the "
+                        + c.tag() + "<bold>" + c.display() + "</bold><gray> sigil of <white>"
+                        + Astralis.MM.escapeTags(ownerName == null ? "an unknown soul" : ownerName) + "<gray>."));
+            }
+        } else {
+            p.sendActionBar(Astralis.mm(c.tag() + "✦ <gray>Your sigil returns to you."));
+        }
+    }
+
+    // ------------------------------------------------------------------ storage protection
+    private boolean storageBlocked() { return !plugin.getConfig().getBoolean("general.allow-storage", false); }
+
+    private static boolean playerOnly(Inventory top) {
+        InventoryType t = top.getType();
+        return t == InventoryType.CRAFTING || t == InventoryType.CREATIVE;
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onClick(InventoryClickEvent e) {
+        if (!storageBlocked()) return;
+        Inventory top = e.getView().getTopInventory();
+        if (playerOnly(top)) return;
+        boolean inTop = e.getRawSlot() >= 0 && e.getRawSlot() < top.getSize();
+        SigilManager sm = plugin.sigils();
+
+        if (inTop && sm.isSigil(e.getCursor())) { e.setCancelled(true); return; }
+        if (!inTop && e.isShiftClick() && sm.isSigil(e.getCurrentItem())) { e.setCancelled(true); return; }
+        if (inTop && e.getClick() == ClickType.NUMBER_KEY) {
+            ItemStack hot = e.getWhoClicked().getInventory().getItem(e.getHotbarButton());
+            if (sm.isSigil(hot)) { e.setCancelled(true); return; }
+        }
+        if (inTop && e.getClick() == ClickType.SWAP_OFFHAND && sm.isSigil(e.getWhoClicked().getInventory().getItemInOffHand())) {
+            e.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onDrag(InventoryDragEvent e) {
+        if (!storageBlocked()) return;
+        Inventory top = e.getView().getTopInventory();
+        if (playerOnly(top) || !plugin.sigils().isSigil(e.getOldCursor())) return;
+        for (int slot : e.getRawSlots()) {
+            if (slot < top.getSize()) { e.setCancelled(true); return; }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onHopper(InventoryMoveItemEvent e) {
+        if (storageBlocked() && plugin.sigils().isSigil(e.getItem())) e.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onHopperPickup(InventoryPickupItemEvent e) {
+        if (plugin.sigils().isSigil(e.getItem().getItemStack())) e.setCancelled(true);
+    }
+
+    // ------------------------------------------------------------------ crafting / anvil / frames
+    @EventHandler
+    public void onPrepareCraft(PrepareItemCraftEvent e) {
+        Recipe r = e.getRecipe();
+        if (r instanceof Keyed k && k.getKey().equals(plugin.keys().recipeCore)) return;
+        for (ItemStack it : e.getInventory().getMatrix()) {
+            if (it != null && (plugin.sigils().isSigil(it) || plugin.sigils().isCore(it) || plugin.events().isShard(it))) {
+                e.getInventory().setResult(null);
+                return;
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPrepareAnvil(PrepareAnvilEvent e) {
+        for (int i = 0; i < 2; i++) {
+            ItemStack it = e.getInventory().getItem(i);
+            if (it != null && (plugin.sigils().isSigil(it) || plugin.sigils().isCore(it))) {
+                e.setResult(null);
+                return;
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onInteractEntity(PlayerInteractEntityEvent e) {
+        Entity t = e.getRightClicked();
+        if (!(t instanceof ItemFrame || t instanceof ArmorStand || t instanceof Allay)) return;
+        ItemStack hand = e.getPlayer().getInventory().getItem(e.getHand());
+        if (plugin.sigils().isSigil(hand) || plugin.sigils().isCore(hand)) e.setCancelled(true);
+    }
+}
+
+
+===== FILE: src/main/java/com/astralis/task/StarTask.java =====
+package com.astralis.task;
+
+import com.astralis.Astralis;
+import com.astralis.core.Constellation;
+import com.astralis.core.Sigil;
+import com.astralis.core.Tier;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.Iterator;
+import java.util.UUID;
+
+/** Every 2 ticks: ambient sparkle. Every 10: passives, HUD, dropped-sigil beacons. */
+public final class StarTask extends BukkitRunnable {
+    private final Astralis plugin;
+    private int tick = 0;
+
+    public StarTask(Astralis plugin) { this.plugin = plugin; }
+
+    @Override
+    public void run() {
+        tick += 2;
+        boolean slow = tick % 10 == 0;
+        boolean ambient = plugin.getConfig().getBoolean("general.ambient-particles", true);
+
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.isDead() || p.getGameMode() == GameMode.SPECTATOR || plugin.disabledWorld(p.getWorld())) continue;
+            Sigil s = plugin.sigils().active(p);
+            if (s == null) continue;
+            if (ambient && !p.isInvisible() && !p.hasPotionEffect(PotionEffectType.INVISIBILITY)) ambient(p, s);
+            if (slow) {
+                plugin.abilities().kit(s.constellation()).passive(p, plugin.sigils().potency(p, s));
+                hud(p);
+            }
+        }
+        if (slow) beacons();
+        if (tick % 100 == 0) plugin.statuses().purge();
+    }
+
+    private void ambient(Player p, Sigil s) {
+        double a = tick * 0.22;
+        Location base = p.getLocation().add(0, 1.0, 0);
+        var dust = new Particle.DustOptions(s.constellation().bukkitColor(), 0.8f);
+        for (int i = 0; i < 2; i++) {
+            double ang = a + i * Math.PI;
+            Location l = base.clone().add(Math.cos(ang) * 0.75, Math.sin(a * 0.6 + i) * 0.5, Math.sin(ang) * 0.75);
+            p.getWorld().spawnParticle(Particle.DUST, l, 1, 0, 0, 0, 0, dust);
+        }
+        if (s.tier() == Tier.RADIANT && tick % 6 == 0) {
+            p.getWorld().spawnParticle(Particle.END_ROD, base.clone().add(0, 0.9, 0), 1, 0.25, 0.1, 0.25, 0.01);
+        }
+    }
+
+    private void hud(Player p) {
+        Sigil hs = plugin.sigils().read(p.getInventory().getItemInMainHand());
+        if (hs == null) return;
+        Constellation c = hs.constellation();
+        UUID id = p.getUniqueId();
+        double energy = plugin.stardust().get(p);
+        double max = plugin.stardust().max();
+        int cost = plugin.ultCost(hs.tier());
+        int filled = (int) Math.round(10 * Math.min(1.0, energy / max));
+
+        double pcd = plugin.cooldowns().remaining(id, c.name() + ":P");
+        double ucd = plugin.cooldowns().remaining(id, c.name() + ":U");
+        String primary = pcd > 0 ? "<gray>◇ " + (int) Math.ceil(pcd) + "s" : "<green>◆ Ready";
+        String ult;
+        if (ucd > 0) ult = "<gray>★ " + (int) Math.ceil(ucd) + "s";
+        else if (energy >= cost) ult = "<gold><bold>★ ZENITH READY";
+        else ult = "<gray>★ " + (int) energy + "/" + cost;
+
+        String text = c.tag() + "✦ " + c.display() + " <dark_gray>▏ " + c.tag() + "▰".repeat(filled)
+                + "<dark_gray>" + "▱".repeat(10 - filled) + " <dark_gray>▏ " + primary + " <dark_gray>▏ " + ult;
+        p.sendActionBar(Astralis.mm(text));
+    }
+
+    /** A light pillar over every sigil lying on the ground. */
+    private void beacons() {
+        Iterator<UUID> it = plugin.sigils().tracked().iterator();
+        while (it.hasNext()) {
+            Entity e = Bukkit.getEntity(it.next());
+            if (!(e instanceof Item item) || !item.isValid()) { it.remove(); continue; }
+            Sigil s = plugin.sigils().read(item.getItemStack());
+            if (s == null) { it.remove(); continue; }
+            Location l = item.getLocation();
+            var dust = new Particle.DustOptions(s.constellation().bukkitColor(), 1.3f);
+            for (int i = 0; i < 14; i++) {
+                Location at = l.clone().add(0, 0.3 + i * 0.5, 0);
+                l.getWorld().spawnParticle(Particle.END_ROD, at, 1, 0.02, 0, 0.02, 0);
+                if (i % 2 == 0) l.getWorld().spawnParticle(Particle.DUST, at, 1, 0.15, 0, 0.15, 0, dust);
+            }
+        }
+    }
+}
